@@ -447,6 +447,9 @@ async def interactive_feedback(
     session_title: Annotated[
         str, Field(description="會話標題（必填），用於標識和復用會話。同一對話的多次調用必須使用相同標題，不同對話應使用不同標題。建議使用對話主題作為標題。")
     ] = "",
+    images: Annotated[
+        list[dict], Field(description="AI 提供的圖片列表。每個元素為 dict，包含 data（base64 編碼字串）和 media_type（如 image/png）欄位。")
+    ] = [],
 ):
     """Interactive feedback collection tool for LLM agents.
 
@@ -481,7 +484,7 @@ async def interactive_feedback(
         # 使用 Web 模式
         debug_log("回饋模式: web")
 
-        result = await launch_web_feedback_ui(project_directory, summary, timeout, session_title)
+        result = await launch_web_feedback_ui(project_directory, summary, timeout, session_title, images=images)
 
         # 處理取消情況
         if not result:
@@ -534,7 +537,7 @@ async def interactive_feedback(
         return [TextContent(type="text", text=user_error_msg)]
 
 
-async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int, session_title: str = "") -> dict:
+async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int, session_title: str = "", *, images: list[dict] | None = None) -> dict:
     """
     啟動 Web UI 收集回饋，支援自訂超時時間
 
@@ -553,8 +556,7 @@ async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int, s
         # 使用新的 web 模組
         from .web import launch_web_feedback_ui as web_launch
 
-        # 傳遞 timeout 和 session_title 參數給 Web UI
-        return await web_launch(project_dir, summary, timeout, session_title=session_title)
+        return await web_launch(project_dir, summary, timeout, session_title=session_title, images=images)
     except ImportError as e:
         # 使用統一錯誤處理
         error_id = ErrorHandler.log_error_with_context(

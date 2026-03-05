@@ -1105,7 +1105,7 @@ def get_web_ui_manager() -> WebUIManager:
 
 
 async def launch_web_feedback_ui(
-    project_directory: str, summary: str, timeout: int = 600, *, session_title: str = ""
+    project_directory: str, summary: str, timeout: int = 600, *, session_title: str = "", images: list[dict] | None = None
 ) -> dict:
     """
     啟動 Web 回饋介面並等待用戶回饋 - Hub 感知模式
@@ -1136,11 +1136,11 @@ async def launch_web_feedback_ui(
     if hub_info:
         debug_log(f"[入口] 走遠端客戶端路徑，Hub={hub_info.url}")
         return await _launch_as_remote_client(
-            hub_info, project_directory, summary, timeout, session_title=session_title
+            hub_info, project_directory, summary, timeout, session_title=session_title, images=images
         )
     else:
         debug_log("[入口] 走 Hub Owner 路徑")
-        return await _launch_as_hub_owner(project_directory, summary, timeout, session_title=session_title)
+        return await _launch_as_hub_owner(project_directory, summary, timeout, session_title=session_title, images=images)
 
 
 async def _launch_as_remote_client(
@@ -1150,6 +1150,7 @@ async def _launch_as_remote_client(
     timeout: int,
     *,
     session_title: str = "",
+    images: list[dict] | None = None,
 ) -> dict:
     """作為遠端客戶端向已有 Hub 註冊會話"""
     from ..hub import HubClient
@@ -1166,7 +1167,7 @@ async def _launch_as_remote_client(
     except ConnectionError:
         debug_log("Hub 連接失敗，回退到本地模式")
         return await _launch_as_hub_owner(
-            project_directory, summary, timeout, session_title=session_title
+            project_directory, summary, timeout, session_title=session_title, images=images
         )
 
 
@@ -1176,6 +1177,7 @@ async def _launch_as_hub_owner(
     timeout: int,
     *,
     session_title: str = "",
+    images: list[dict] | None = None,
 ) -> dict:
     """作為 Hub Owner 啟動本地服務器，按 session_title 復用已有會話"""
     from ..hub import write_hub_lock, remove_hub_lock
@@ -1209,6 +1211,9 @@ async def _launch_as_hub_owner(
         manager.current_session = existing
         debug_log(f"復用會話 {session_id[:8]}，當前總數={len(manager.sessions)}")
 
+        if images:
+            session.append_ai_images(images)
+
         # 通知前端會話已刷新
         if session.websocket:
             try:
@@ -1232,6 +1237,9 @@ async def _launch_as_hub_owner(
         )
         session_id = manager.create_session(project_directory, summary, title=session_title)
         session = manager.get_session(session_id)
+
+        if images and session:
+            session.append_ai_images(images)
 
     if not session:
         raise RuntimeError("無法創建回饋會話")

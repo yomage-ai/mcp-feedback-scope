@@ -231,6 +231,34 @@ class WebFeedbackSession:
             f"歷史消息數={len(self.message_history)}"
         )
 
+    def append_ai_images(self, images: list[dict]) -> None:
+        """将 AI 提供的图片附加到最近一条 assistant 消息上"""
+        if not images:
+            return
+        img_list = []
+        for img in images:
+            data = img.get("data", "")
+            media_type = img.get("media_type", "image/png")
+            if data:
+                img_list.append({"data": data, "media_type": media_type})
+
+        if not img_list:
+            return
+
+        for entry in reversed(self.message_history):
+            if entry.get("role") == "assistant":
+                entry.setdefault("images", []).extend(img_list)
+                debug_log(f"會話 {self.session_id} 附加 {len(img_list)} 張 AI 圖片")
+                return
+
+        self.message_history.append({
+            "role": "assistant",
+            "content": "",
+            "timestamp": int(time.time() * 1000),
+            "images": img_list,
+        })
+        debug_log(f"會話 {self.session_id} 新增 AI 圖片消息 ({len(img_list)} 張)")
+
     def get_message_code(self, key: str) -> str:
         """
         獲取訊息代碼
