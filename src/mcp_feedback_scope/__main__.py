@@ -71,6 +71,13 @@ def main():
     # feedback list
     feedback_sub.add_parser("list", help="列出所有活跃的反馈会话")
 
+    # feedback view
+    view_parser = feedback_sub.add_parser("view", help="查看会话详情和 AI 消息")
+    view_parser.add_argument(
+        "session", nargs="?", default=None,
+        help="会话 ID 或标题（可省略，显示最新等待会话）",
+    )
+
     # feedback send
     send_parser = feedback_sub.add_parser("send", help="向指定会话发送反馈")
     send_parser.add_argument(
@@ -88,6 +95,15 @@ def main():
     send_parser.add_argument(
         "--title", type=str, default=None,
         help="通过会话标题匹配目标会话",
+    )
+
+    # feedback watch
+    watch_parser = feedback_sub.add_parser(
+        "watch", help="监听模式：持续等待新会话并显示 AI 消息"
+    )
+    watch_parser.add_argument(
+        "--interval", type=int, default=2,
+        help="轮询间隔秒数（默认 2）",
     )
 
     args = parser.parse_args()
@@ -114,14 +130,17 @@ def run_server():
 
 def run_feedback(args):
     """执行 feedback 子命令"""
-    from .cli.feedback_cli import cmd_interactive, cmd_list, cmd_send
+    from .cli.feedback_cli import cmd_interactive, cmd_list, cmd_send, cmd_view, cmd_watch
 
     if args.feedback_command == "list":
         sys.exit(cmd_list(args))
+    elif args.feedback_command == "view":
+        sys.exit(cmd_view(args))
     elif args.feedback_command == "send":
         sys.exit(cmd_send(args))
+    elif args.feedback_command == "watch":
+        sys.exit(cmd_watch(args))
     else:
-        # 无子命令时进入交互模式
         sys.exit(cmd_interactive(args))
 
 

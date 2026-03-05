@@ -140,6 +140,13 @@ class WebFeedbackSession:
         self.process: subprocess.Popen | None = None
         self.command_logs: list[str] = []
         self.user_messages: list[dict] = []  # 用戶消息記錄
+        self.message_history: list[dict] = []  # 对话历史，跨 reset 保留
+        if summary:
+            self.message_history.append({
+                "role": "assistant",
+                "content": summary,
+                "timestamp": int(time.time() * 1000),
+            })
         self._cleanup_done = False  # 防止重複清理
         # 移除語言設定，改由前端處理
 
@@ -190,6 +197,9 @@ class WebFeedbackSession:
 
     def reset_for_new_call(self, project_directory: str, summary: str, title: str = ""):
         """重置会话以复用于新的 MCP 工具调用，保留 session_id 和 WebSocket 连接"""
+        # __init__ 和 submit_feedback 已经各自将 AI/用户消息写入 message_history
+        # 这里只需添加新一轮的 AI 消息
+
         self.project_directory = project_directory
         self.summary = summary
         if title:
@@ -206,12 +216,19 @@ class WebFeedbackSession:
         self.last_activity = time.time()
         self.last_heartbeat = None
 
-        # 重新启动自动清理定时器
+        if summary:
+            self.message_history.append({
+                "role": "assistant",
+                "content": summary,
+                "timestamp": int(self.last_activity * 1000),
+            })
+
         self._schedule_auto_cleanup()
 
         debug_log(
             f"會話 {self.session_id} 已重置為新調用，"
-            f"project={project_directory}, summary 長度={len(summary)}"
+            f"project={project_directory}, summary 長度={len(summary)}, "
+            f"歷史消息數={len(self.message_history)}"
         )
 
     def get_message_code(self, key: str) -> str:
@@ -563,6 +580,14 @@ class WebFeedbackSession:
         # 先設置設定，再處理圖片（因為處理圖片時需要用到設定）
         self.settings = settings or {}
         self.images = self._process_images(images)
+
+        # 记录用户反馈到对话历史
+        if feedback:
+            self.message_history.append({
+                "role": "user",
+                "content": feedback,
+                "timestamp": int(time.time() * 1000),
+            })
 
         # 進入下一步：等待中 → 已提交反饋
         self.next_step("已送出反饋，等待下次 MCP 調用")

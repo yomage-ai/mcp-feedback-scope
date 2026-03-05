@@ -8,6 +8,7 @@ CLI 反馈工具
 
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -260,20 +261,7 @@ def cmd_send(args: Any) -> int:
         print("错误：反馈内容不能为空。")
         return 1
 
-    # 提交反馈
-    try:
-        result = submit_feedback(hub, session_id, feedback_text)
-    except (RuntimeError, ConnectionError) as e:
-        print(f"错误：提交反馈失败 - {e}")
-        return 1
-
-    if result.get("status") == "ok":
-        print(f"反馈已发送到会话 [{session_id[:8]}] {session_title}")
-        return 0
-    else:
-        error = result.get("error", "未知错误")
-        print(f"提交失败: {error}")
-        return 1
+    return _submit_and_report(hub, session_id, session_title, feedback_text)
 
 
 def cmd_interactive(args: Any) -> int:
@@ -354,6 +342,13 @@ def cmd_interactive(args: Any) -> int:
         print("错误：反馈内容不能为空。")
         return 1
 
+    return _submit_and_report(hub, session_id, session_title, feedback_text)
+
+
+def _submit_and_report(
+    hub: HubInfo, session_id: str, session_title: str, feedback_text: str
+) -> int:
+    """提交反馈并打印结果，返回退出码"""
     try:
         result = submit_feedback(hub, session_id, feedback_text)
     except (RuntimeError, ConnectionError) as e:
@@ -367,3 +362,217 @@ def cmd_interactive(args: Any) -> int:
         error = result.get("error", "未知错误")
         print(f"提交失败: {error}")
         return 1
+
+
+def get_session_detail(hub: HubInfo, session_id: str) -> dict[str, Any]:
+    """获取指定会话的详细信息"""
+    return _make_request(hub, "GET", f"/api/session/{session_id}")
+
+
+def _print_session_detail(session: dict) -> None:
+    """打印会话的详细信息，包括完整对话历史"""
+    sid = session.get("session_id", "")
+    title = session.get("title", "") or "(无标题)"
+    status = session.get("status", "unknown")
+    proj = session.get("project_directory", "")
+    history = session.get("message_history", [])
+    summary = session.get("summary", "")
+    feedback = session.get("feedback_result", "")
+
+    print(f"会话: [{sid[:8]}] {title}")
+    print(f"状态: {status}")
+    print(f"目录: {proj}")
+    print()
+
+    if history:
+        print("=" * 60)
+        print("对话历史:")
+        print("=" * 60)
+        for msg in history:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            if not content:
+                continue
+            if role == "assistant":
+                print(f"\n[AI]:")
+                print(content)
+            elif role == "user":
+                print(f"\n[你]:")
+                print(content)
+        print()
+        print("=" * 60)
+    else:
+        # 没有 message_history 时降级显示当前 summary/feedback
+        if summary:
+            print("=" * 60)
+            print("AI 消息:")
+            print("=" * 60)
+            print(summary)
+            print("=" * 60)
+        else:
+            print("(无 AI 消息)")
+
+        if feedback:
+            print()
+            print("-" * 60)
+            print("已提交的反馈:")
+            print("-" * 60)
+            print(feedback)
+            print("-" * 60)
+
+
+def cmd_view(args: Any) -> int:
+    """查看指定会话的详细信息和 AI 消息"""
+    hub = _discover_hub_for_cli()
+    if not hub:
+        print("错误：未找到运行中的 MCP Feedback 服务器。")
+        return 1
+
+    try:
+        sessions = list_sessions(hub)
+    except (RuntimeError, ConnectionError) as e:
+        print(f"错误：无法获取会话列表 - {e}")
+        return 1
+
+    if not sessions:
+        print("当前没有活跃的会话。")
+        return 1
+
+    identifier = getattr(args, "session", None)
+    if identifier:
+        target = _find_session_by_identifier(sessions, identifier)
+        if not target:
+            print(f"未找到匹配 '{identifier}' 的会话。")
+            print()
+            _print_sessions_table(sessions)
+            return 1
+    else:
+        target = _find_latest_waiting_session(sessions)
+        if not target:
+            target = sessions[0] if sessions else None
+        if not target:
+            print("没有可查看的会话。")
+            return 1
+
+    try:
+        detail = get_session_detail(hub, target["session_id"])
+    except (RuntimeError, ConnectionError) as e:
+        print(f"错误：无法获取会话详情 - {e}")
+        return 1
+
+    _print_session_detail(detail)
+    return 0
+
+
+def cmd_watch(args: Any) -> int:
+    """
+    监听模式：持续轮询等待新会话，自动显示 AI 消息并等待用户输入反馈。
+    完全脱离浏览器的交互式反馈循环。
+    """
+    hub = _discover_hub_for_cli()
+    if not hub:
+        print("错误：未找到运行中的 MCP Feedback 服务器。")
+        print("请确保 Cursor 已启动并调用了 interactive_feedback 工具。")
+        return 1
+
+    print(f"服务器: {hub.url}  (PID: {hub.pid})")
+    print("进入监听模式，等待 Cursor 发送新会话...")
+    print("按 Ctrl+C 退出")
+    print()
+
+    poll_interval = getattr(args, "interval", None) or 2
+    seen_sessions: set[str] = set()
+    replied_sessions: set[str] = set()
+
+    try:
+        while True:
+            try:
+                sessions = list_sessions(hub)
+            except ConnectionError:
+                print("[连接断开] 等待重连...")
+                time.sleep(5)
+                hub = _discover_hub_for_cli()
+                if not hub:
+                    print("[服务器已停止] 退出监听。")
+                    return 1
+                continue
+            except RuntimeError:
+                time.sleep(poll_interval)
+                continue
+
+            waiting = [
+                s for s in sessions
+                if s.get("status") in ("waiting", "active")
+                and s.get("session_id") not in replied_sessions
+            ]
+
+            for session in waiting:
+                sid = session.get("session_id", "")
+                title = session.get("title", "") or "(无标题)"
+                is_new = sid not in seen_sessions
+
+                if is_new:
+                    seen_sessions.add(sid)
+                    print()
+                    print("=" * 60)
+                    print(f"[新会话] [{sid[:8]}] {title}")
+                    print(f"目录: {session.get('project_directory', '')}")
+                    print("=" * 60)
+
+                    try:
+                        detail = get_session_detail(hub, sid)
+                        history = detail.get("message_history", [])
+                        if history:
+                            # 只显示最新的 AI 消息
+                            for msg in reversed(history):
+                                if msg.get("role") == "assistant" and msg.get("content"):
+                                    print()
+                                    print("AI 消息:")
+                                    print("-" * 60)
+                                    print(msg["content"])
+                                    print("-" * 60)
+                                    break
+                        else:
+                            summary = detail.get("summary", "")
+                            if summary:
+                                print()
+                                print("AI 消息:")
+                                print("-" * 60)
+                                print(summary)
+                                print("-" * 60)
+                    except (RuntimeError, ConnectionError):
+                        print("(无法获取 AI 消息)")
+
+                    print()
+                    _prompt_and_send_feedback(hub, sid, title, replied_sessions)
+
+            time.sleep(poll_interval)
+
+    except KeyboardInterrupt:
+        print("\n已退出监听模式。")
+        return 0
+
+
+def _prompt_and_send_feedback(
+    hub: HubInfo, session_id: str, title: str, replied_sessions: set[str]
+) -> None:
+    """提示用户输入反馈并发送"""
+    try:
+        feedback_text = input("输入反馈 (直接回车跳过): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return
+
+    if not feedback_text:
+        print("已跳过，等待下一个会话...")
+        return
+
+    try:
+        result = submit_feedback(hub, session_id, feedback_text)
+        if result.get("status") == "ok":
+            print(f"反馈已发送到 [{session_id[:8]}] {title}")
+            replied_sessions.add(session_id)
+        else:
+            print(f"发送失败: {result.get('error', '未知错误')}")
+    except (RuntimeError, ConnectionError) as e:
+        print(f"发送失败: {e}")

@@ -193,11 +193,14 @@ def setup_routes(manager: "WebUIManager"):
         return JSONResponse(
             content={
                 "session_id": session.session_id,
+                "title": session.title,
                 "project_directory": session.project_directory,
                 "summary": session.summary,
                 "status": session.status.value,
                 "status_message": session.status_message,
                 "feedback_completed": session.feedback_completed.is_set(),
+                "feedback_result": session.feedback_result or "",
+                "message_history": session.message_history,
                 "command_logs": session.command_logs,
                 "images_count": len(session.images),
                 "created_at": int(session.created_at * 1000),
