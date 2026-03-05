@@ -714,7 +714,21 @@
                     dirEl.textContent = data.project_directory;
                 }
 
-                console.log('✅ 會話內容已刷新:', sessionId);
+                // 根据服务器的会话状态同步前端反馈状态
+                if (self.uiManager && data.status) {
+                    var serverStatus = data.status;
+                    if (serverStatus === 'waiting' || serverStatus === 'active') {
+                        self.uiManager.setFeedbackState(
+                            window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING, sessionId
+                        );
+                    } else if (serverStatus === 'feedback_submitted') {
+                        self.uiManager.setFeedbackState(
+                            window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_SUBMITTED, sessionId
+                        );
+                    }
+                }
+
+                console.log('✅ 會話內容已刷新:', sessionId, '狀態:', data.status);
             })
             .catch(function(err) {
                 console.error('刷新會話內容失敗:', err);
