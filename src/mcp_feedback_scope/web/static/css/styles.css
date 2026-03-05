@@ -2201,3 +2201,58 @@ textarea:-ms-input-placeholder,
     transition: all 0.3s ease;
 }
 
+/* 对话历史样式 */
+.conversation-history {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.chat-message {
+    border-radius: 8px;
+    padding: 8px 12px;
+    max-width: 100%;
+}
+
+.chat-message.msg-assistant {
+    background: var(--bg-secondary, #1e1e2e);
+    border-left: 3px solid var(--accent-color, #7c3aed);
+}
+
+.chat-message.msg-user {
+    background: var(--bg-tertiary, #2a2a3e);
+    border-left: 3px solid var(--success-color, #22c55e);
+}
+
+.chat-role {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+
+.msg-assistant .chat-role {
+    color: var(--accent-color, #7c3aed);
+}
+
+.msg-user .chat-role {
+    color: var(--success-color, #22c55e);
+}
+
+.chat-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.chat-content p {
+    margin: 0 0 4px 0 !important;
+}
+
+.chat-content p:last-child {
+    margin-bottom: 0 !important;
+}
+

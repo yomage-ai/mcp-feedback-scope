@@ -454,29 +454,78 @@
     /**
      * 更新 AI 摘要內容
      */
-    UIManager.prototype.updateAISummaryContent = function(summary) {
-        console.log('📝 更新 AI 摘要內容...', '內容長度:', summary ? summary.length : 'undefined');
-        console.log('📝 marked 可用:', typeof window.marked !== 'undefined');
-        console.log('📝 DOMPurify 可用:', typeof window.DOMPurify !== 'undefined');
-
-        // 渲染 Markdown 內容
-        const renderedContent = this.renderMarkdownSafely(summary);
-        console.log('📝 渲染後內容長度:', renderedContent ? renderedContent.length : 'undefined');
-
-        const summaryContent = Utils.safeQuerySelector('#summaryContent');
-        if (summaryContent) {
-            summaryContent.innerHTML = renderedContent;
-            console.log('✅ 已更新分頁模式摘要內容（Markdown 渲染）');
-        } else {
-            console.warn('⚠️ 找不到 #summaryContent 元素');
+    UIManager.prototype.updateAISummaryContent = function(summary, messageHistory) {
+        if (messageHistory && messageHistory.length > 0) {
+            this._renderConversationHistory(messageHistory);
+            return;
         }
 
-        const combinedSummaryContent = Utils.safeQuerySelector('#combinedSummaryContent');
+        var renderedContent = this.renderMarkdownSafely(summary);
+
+        var summaryContent = Utils.safeQuerySelector('#summaryContent');
+        if (summaryContent) {
+            summaryContent.innerHTML = renderedContent;
+        }
+
+        var combinedSummaryContent = Utils.safeQuerySelector('#combinedSummaryContent');
         if (combinedSummaryContent) {
             combinedSummaryContent.innerHTML = renderedContent;
-            console.log('✅ 已更新合併模式摘要內容（Markdown 渲染）');
-        } else {
-            console.warn('⚠️ 找不到 #combinedSummaryContent 元素');
+        }
+    };
+
+    UIManager.prototype.appendUserMessage = function(content) {
+        var renderedContent = this.renderMarkdownSafely(content);
+        var msgHtml = '<div class="chat-message msg-user">';
+        msgHtml += '<div class="chat-role">你</div>';
+        msgHtml += '<div class="chat-content">' + renderedContent + '</div>';
+        msgHtml += '</div>';
+
+        var containers = [
+            Utils.safeQuerySelector('#summaryContent .conversation-history'),
+            Utils.safeQuerySelector('#combinedSummaryContent .conversation-history')
+        ];
+
+        for (var i = 0; i < containers.length; i++) {
+            if (containers[i]) {
+                containers[i].insertAdjacentHTML('beforeend', msgHtml);
+                var parent = containers[i].parentElement;
+                if (parent) parent.scrollTop = parent.scrollHeight;
+            }
+        }
+    };
+
+    UIManager.prototype._renderConversationHistory = function(messageHistory) {
+        var self = this;
+        var html = '<div class="conversation-history">';
+
+        for (var i = 0; i < messageHistory.length; i++) {
+            var msg = messageHistory[i];
+            var role = msg.role || 'unknown';
+            var content = msg.content || '';
+            if (!content) continue;
+
+            var renderedContent = self.renderMarkdownSafely(content);
+            var roleClass = role === 'assistant' ? 'msg-assistant' : 'msg-user';
+            var roleLabel = role === 'assistant' ? 'AI' : '你';
+
+            html += '<div class="chat-message ' + roleClass + '">';
+            html += '<div class="chat-role">' + roleLabel + '</div>';
+            html += '<div class="chat-content">' + renderedContent + '</div>';
+            html += '</div>';
+        }
+
+        html += '</div>';
+
+        var summaryContent = Utils.safeQuerySelector('#summaryContent');
+        if (summaryContent) {
+            summaryContent.innerHTML = html;
+            summaryContent.scrollTop = summaryContent.scrollHeight;
+        }
+
+        var combinedSummaryContent = Utils.safeQuerySelector('#combinedSummaryContent');
+        if (combinedSummaryContent) {
+            combinedSummaryContent.innerHTML = html;
+            combinedSummaryContent.scrollTop = combinedSummaryContent.scrollHeight;
         }
     };
 

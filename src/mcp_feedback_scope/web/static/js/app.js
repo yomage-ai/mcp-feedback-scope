@@ -700,11 +700,14 @@
                     return;
                 }
 
-                var summaryEl = document.getElementById('summary');
-                if (summaryEl && data.summary) {
-                    if (typeof window.marked !== 'undefined' && typeof window.DOMPurify !== 'undefined') {
-                        summaryEl.innerHTML = window.DOMPurify.sanitize(window.marked.parse(data.summary));
-                    } else {
+                // 使用 UIManager 统一渲染摘要和对话历史
+                if (self.uiManager) {
+                    self.uiManager.updateAISummaryContent(
+                        data.summary, data.message_history
+                    );
+                } else {
+                    var summaryEl = document.getElementById('summary');
+                    if (summaryEl && data.summary) {
                         summaryEl.textContent = data.summary;
                     }
                 }
@@ -1327,9 +1330,13 @@
             });
 
             if (success) {
+                // 乐观更新：立即将用户消息追加到对话历史显示
+                if (this.uiManager && feedbackData.feedback) {
+                    this.uiManager.appendUserMessage(feedbackData.feedback);
+                }
                 // 重置表單狀態但保留文字內容
                 if (this.uiManager) {
-                    this.uiManager.resetFeedbackForm(false);  // false 表示不清空文字
+                    this.uiManager.resetFeedbackForm(false);
                 }
                 // 只清空圖片
                 if (this.imageHandler) {
@@ -1824,9 +1831,10 @@
 
                 // 更新 AI 摘要內容
                 if (self.uiManager) {
-                    // console.log('🔧 準備更新 AI 摘要內容，summary 長度:', sessionData.summary ? sessionData.summary.length : 'undefined');
-                    self.uiManager.updateAISummaryContent(sessionData.summary);
-                    self.uiManager.resetFeedbackForm(false);  // 不清空文字內容
+                    self.uiManager.updateAISummaryContent(
+                        sessionData.summary, sessionData.message_history
+                    );
+                    self.uiManager.resetFeedbackForm(false);
                     self.uiManager.updateStatusIndicator();
                 }
 

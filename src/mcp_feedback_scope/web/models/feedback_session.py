@@ -340,6 +340,7 @@ class WebFeedbackSession:
             "summary": self.summary,
             "session_id": self.session_id,
             "title": self.title,
+            "message_history": self.message_history,
         }
 
     def is_active(self) -> bool:
