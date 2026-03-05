@@ -11,6 +11,7 @@ Web 回饋會話模型
 
 import asyncio
 import base64
+import os
 import shlex
 import subprocess
 import threading
@@ -232,13 +233,16 @@ class WebFeedbackSession:
         )
 
     def append_ai_images(self, images: list[dict]) -> None:
-        """将 AI 提供的图片附加到最近一条 assistant 消息上"""
+        """将 AI 提供的图片附加到最近一条 assistant 消息上。
+        支持 path 模式和 data 模式。"""
         if not images:
             return
         img_list = []
         for img in images:
             data = img.get("data", "")
             media_type = img.get("media_type", "image/png")
+            if not data and img.get("path"):
+                data, media_type = self._resolve_image_path(img["path"])
             if data:
                 img_list.append({"data": data, "media_type": media_type})
 
@@ -258,6 +262,35 @@ class WebFeedbackSession:
             "images": img_list,
         })
         debug_log(f"會話 {self.session_id} 新增 AI 圖片消息 ({len(img_list)} 張)")
+
+    @staticmethod
+    def _resolve_image_path(file_path: str) -> tuple[str, str]:
+        """将本地图片路径解析为 base64 data 和 media_type。
+        返回 ("", "") 表示解析失败。"""
+        import base64 as _b64
+
+        try:
+            file_path = os.path.abspath(file_path)
+            if not os.path.isfile(file_path):
+                debug_log(f"圖片路徑不存在: {file_path}")
+                return "", ""
+            with open(file_path, "rb") as f:
+                raw = f.read()
+            if not raw:
+                return "", ""
+            ext = os.path.splitext(file_path)[1].lower()
+            media_map = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".gif": "image/gif",
+                ".webp": "image/webp",
+            }
+            media_type = media_map.get(ext, "image/png")
+            return _b64.b64encode(raw).decode("utf-8"), media_type
+        except Exception as e:
+            debug_log(f"圖片路徑解析失敗 ({file_path}): {e}")
+            return "", ""
 
     def get_message_code(self, key: str) -> str:
         """

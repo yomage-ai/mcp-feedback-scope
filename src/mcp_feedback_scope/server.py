@@ -371,6 +371,57 @@ def create_feedback_text(feedback_data: dict) -> str:
     return "\n\n".join(text_parts) if text_parts else "用戶未提供任何回饋內容。"
 
 
+def resolve_image_paths(images: list[dict]) -> list[dict]:
+    """
+    將 images 列表中的 path 引用解析為 base64 data。
+    支持兩種格式的輸入：
+      - path 模式: {"path": "/absolute/path/to/image.png"}
+      - data 模式: {"data": "base64...", "media_type": "image/png"}
+    path 模式會被轉換為 data 模式後返回。
+    """
+    resolved = []
+    for i, img in enumerate(images, 1):
+        if img.get("path"):
+            file_path = img["path"]
+            try:
+                file_path = os.path.abspath(file_path)
+                if not os.path.isfile(file_path):
+                    debug_log(f"圖片 {i} 路徑不存在: {file_path}")
+                    continue
+
+                with open(file_path, "rb") as f:
+                    raw = f.read()
+
+                if len(raw) == 0:
+                    debug_log(f"圖片 {i} 檔案為空: {file_path}")
+                    continue
+
+                ext = os.path.splitext(file_path)[1].lower()
+                media_map = {
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".gif": "image/gif",
+                    ".webp": "image/webp",
+                    ".svg": "image/svg+xml",
+                }
+                media_type = media_map.get(ext, "image/png")
+
+                b64 = base64.b64encode(raw).decode("utf-8")
+                debug_log(
+                    f"圖片 {i} 從路徑載入成功: {file_path} "
+                    f"({len(raw)} bytes, {media_type})"
+                )
+                resolved.append({"data": b64, "media_type": media_type})
+            except Exception as e:
+                debug_log(f"圖片 {i} 路徑解析失敗 ({file_path}): {e}")
+        elif img.get("data"):
+            resolved.append(img)
+        else:
+            debug_log(f"圖片 {i} 既無 path 也無 data，跳過")
+    return resolved
+
+
 def process_images(images_data: list[dict]) -> list[MCPImage]:
     """
     處理圖片資料，轉換為 MCP 圖片對象
@@ -448,7 +499,7 @@ async def interactive_feedback(
         str, Field(description="會話標題（必填），用於標識和復用會話。同一對話的多次調用必須使用相同標題，不同對話應使用不同標題。建議使用對話主題作為標題。")
     ] = "",
     images: Annotated[
-        list[dict], Field(description="AI 提供的圖片列表。每個元素為 dict，包含 data（base64 編碼字串）和 media_type（如 image/png）欄位。")
+        list[dict], Field(description="AI 提供的圖片列表。每個元素為 dict，支持兩種模式：1) path 模式：包含 path（本地檔案路徑）欄位，伺服器自動讀取並編碼；2) data 模式：包含 data（base64 編碼字串）和 media_type（如 image/png）欄位。推薦使用 path 模式以避免傳輸大量 base64 資料。")
     ] = [],
 ):
     """Interactive feedback collection tool for LLM agents.
@@ -484,7 +535,8 @@ async def interactive_feedback(
         # 使用 Web 模式
         debug_log("回饋模式: web")
 
-        result = await launch_web_feedback_ui(project_directory, summary, timeout, session_title, images=images)
+        resolved_images = resolve_image_paths(images) if images else images
+        result = await launch_web_feedback_ui(project_directory, summary, timeout, session_title, images=resolved_images)
 
         # 處理取消情況
         if not result:
