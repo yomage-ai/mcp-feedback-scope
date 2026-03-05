@@ -447,7 +447,7 @@ async def interactive_feedback(
     session_title: Annotated[
         str, Field(description="會話標題（必填），用於標識和復用會話。同一對話的多次調用必須使用相同標題，不同對話應使用不同標題。建議使用對話主題作為標題。")
     ] = "",
-) -> list:
+):
     """Interactive feedback collection tool for LLM agents.
 
     USAGE RULES:
