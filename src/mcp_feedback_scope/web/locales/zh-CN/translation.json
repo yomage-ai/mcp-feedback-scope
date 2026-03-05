@@ -12,13 +12,13 @@
         "updateFailed": "更新内容失败，请手动刷新页面以查看新的 AI 工作摘要"
     },
     "tabs": {
-        "summary": "📋 AI 总结",
-        "commands": "⚡ 命令",
-        "command": "⚡ 命令",
-        "sessions": "📋 会话管理",
-        "settings": "⚙️ 设置",
-        "combined": "📝 工作区",
-        "about": "ℹ️ 关于"
+        "summary": "AI 总结",
+        "commands": "命令",
+        "command": "命令",
+        "sessions": "会话管理",
+        "settings": "设置",
+        "combined": "工作区",
+        "about": "关于"
     },
     "feedback": {
         "title": "💬 提供反馈",
@@ -54,7 +54,7 @@
         "provideTextOrImage": "请提供反馈文字或上传图片"
     },
     "summary": {
-        "title": "📋 AI 工作摘要",
+        "title": "AI 工作摘要",
         "description": "以下是 AI 助手完成的工作摘要，请仔细查看并提供您的反馈意见。",
         "placeholder": "AI 工作摘要将在这里显示...",
         "empty": "目前没有摘要内容",
@@ -110,8 +110,8 @@
         }
     },
     "combined": {
-        "summaryTitle": "📋 AI 工作摘要",
-        "feedbackTitle": "💬 提供反馈"
+        "summaryTitle": "对话记录",
+        "feedbackTitle": "提供反馈"
     },
     "settingsUI": {
         "title": "⚙️ 设定",

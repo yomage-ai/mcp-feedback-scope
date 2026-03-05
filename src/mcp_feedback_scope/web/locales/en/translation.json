@@ -12,13 +12,13 @@
         "updateFailed": "Failed to update content, please manually refresh the page to view new AI work summary"
     },
     "tabs": {
-        "summary": "📋 AI Summary",
-        "commands": "⚡ Commands",
-        "command": "⚡ Commands",
-        "sessions": "📋 Session Management",
-        "settings": "⚙️ Settings",
-        "combined": "📝 Workspace",
-        "about": "ℹ️ About"
+        "summary": "AI Summary",
+        "commands": "Commands",
+        "command": "Commands",
+        "sessions": "Sessions",
+        "settings": "Settings",
+        "combined": "Workspace",
+        "about": "About"
     },
     "feedback": {
         "title": "💬 Provide Feedback",
@@ -54,7 +54,7 @@
         "provideTextOrImage": "Please provide feedback text or upload an image"
     },
     "summary": {
-        "title": "📋 AI Work Summary",
+        "title": "AI Work Summary",
         "description": "Below is the work summary completed by the AI assistant. Please review carefully and provide your feedback.",
         "placeholder": "AI work summary will be displayed here...",
         "empty": "No summary content available",
@@ -110,8 +110,8 @@
         }
     },
     "combined": {
-        "summaryTitle": "📋 AI Work Summary",
-        "feedbackTitle": "💬 Provide Feedback"
+        "summaryTitle": "Conversation",
+        "feedbackTitle": "Provide Feedback"
     },
     "settingsUI": {
         "title": "⚙️ Settings",

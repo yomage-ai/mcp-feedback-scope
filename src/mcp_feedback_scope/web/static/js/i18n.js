@@ -96,10 +96,10 @@ class I18nManager {
                     'projectDirectory': '專案目錄'
                 },
                 'tabs': {
-                    'feedback': '💬 回饋',
-                    'summary': '📋 AI 摘要',
-                    'command': '⚡ 命令',
-                    'settings': '⚙️ 設定'
+                    'feedback': '回饋',
+                    'summary': 'AI 摘要',
+                    'command': '命令',
+                    'settings': '設定'
                 },
                 'buttons': {
                     'cancel': '❌ 取消',

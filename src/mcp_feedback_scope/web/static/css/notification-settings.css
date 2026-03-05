@@ -37,7 +37,7 @@
 .notification-trigger {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
 }
 
 .trigger-options {
@@ -80,7 +80,7 @@
 .notification-actions .btn-primary {
     padding: 8px 16px;
     font-size: 14px;
-    background-color: var(--primary-color, #007acc);
+    background-color: var(--accent-color, #6c5ce7);
     color: white;
     border: none;
     border-radius: 6px;
@@ -89,7 +89,7 @@
 }
 
 .notification-actions .btn-primary:hover {
-    background-color: var(--primary-hover, #0066b3);
+    background-color: var(--accent-hover, #5b4bd5);
 }
 
 /* 通知設定專用的 setting-info 調整 */

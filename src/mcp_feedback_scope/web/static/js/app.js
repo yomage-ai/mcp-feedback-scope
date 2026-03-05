@@ -1331,8 +1331,8 @@
 
             if (success) {
                 // 乐观更新：立即将用户消息追加到对话历史显示
-                if (this.uiManager && feedbackData.feedback) {
-                    this.uiManager.appendUserMessage(feedbackData.feedback);
+                if (this.uiManager && (feedbackData.feedback || (feedbackData.images && feedbackData.images.length > 0))) {
+                    this.uiManager.appendUserMessage(feedbackData.feedback, feedbackData.images);
                 }
                 // 重置表單狀態但保留文字內容
                 if (this.uiManager) {
@@ -1655,9 +1655,26 @@
      * 更新摘要狀態
      */
     FeedbackApp.prototype.updateSummaryStatus = function(message) {
-        const summaryElements = document.querySelectorAll('.ai-summary-content');
-        summaryElements.forEach(function(element) {
-            element.innerHTML = '<div style="padding: 16px; background: var(--success-color); color: white; border-radius: 6px; text-align: center;">✅ ' + message + '</div>';
+        // Status updates are shown as a chat message in the summary area
+        var containers = [
+            document.getElementById('combinedSummaryContent'),
+            document.getElementById('summaryContent')
+        ];
+        containers.forEach(function(element) {
+            if (!element) return;
+            var statusDiv = element.querySelector('.chat-status-message');
+            if (statusDiv) {
+                statusDiv.innerHTML = message;
+            } else {
+                element.insertAdjacentHTML('beforeend',
+                    '<div class="chat-message msg-assistant" style="opacity: 0.7;">' +
+                    '<div class="chat-avatar ai">Ai</div>' +
+                    '<div class="chat-body"><div class="chat-role">System</div>' +
+                    '<div class="chat-content chat-status-message">' + message + '</div>' +
+                    '</div></div>'
+                );
+                element.scrollTop = element.scrollHeight;
+            }
         });
     };
 

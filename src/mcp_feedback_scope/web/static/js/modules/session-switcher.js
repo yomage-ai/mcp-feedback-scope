@@ -1,9 +1,7 @@
 /**
- * MCP Feedback Enhanced - 會話切換器模組
- * ======================================
- *
- * 管理多會話並發的標籤欄 UI 和 Lobby WebSocket 連接。
- * 透過 Lobby 頻道接收新會話通知和狀態變更。
+ * MCP Feedback - Session Switcher Module
+ * =======================================
+ * Manages multi-session sidebar list and Lobby WebSocket connection.
  */
 
 (function() {
@@ -17,8 +15,9 @@
         this.sessions = [];
         this.activeSessionId = null;
 
-        this.barEl = document.getElementById('sessionSwitcherBar');
-        this.containerEl = document.getElementById('sessionTabsContainer');
+        // Use sidebar session list as primary container
+        this.containerEl = document.getElementById('sidebarSessionList')
+                        || document.getElementById('sessionTabsContainer');
 
         this.lobbyWs = null;
         this.lobbyReconnectTimer = null;
@@ -46,11 +45,10 @@
         var url = protocol + '//' + window.location.host + '/ws/lobby';
         var self = this;
 
-        console.log('[SessionSwitcher] 連接 Lobby:', url);
         this.lobbyWs = new WebSocket(url);
 
         this.lobbyWs.onopen = function() {
-            console.log('[SessionSwitcher] Lobby 連接成功');
+            console.log('[SessionSwitcher] Lobby connected');
             self.lobbyReconnectDelay = 2000;
         };
 
@@ -59,17 +57,16 @@
                 var data = JSON.parse(event.data);
                 self._handleLobbyMessage(data);
             } catch (e) {
-                console.error('[SessionSwitcher] 解析 Lobby 消息失敗:', e);
+                console.error('[SessionSwitcher] Parse error:', e);
             }
         };
 
         this.lobbyWs.onclose = function() {
-            console.log('[SessionSwitcher] Lobby 連接關閉，準備重連');
             self._scheduleLobbyReconnect();
         };
 
         this.lobbyWs.onerror = function(err) {
-            console.error('[SessionSwitcher] Lobby 錯誤:', err);
+            console.error('[SessionSwitcher] Lobby error:', err);
         };
 
         this._startLobbyHeartbeat();
@@ -114,12 +111,10 @@
                 break;
             case 'heartbeat_response':
                 break;
-            default:
-                console.log('[SessionSwitcher] 未知 Lobby 消息:', data.type);
         }
     };
 
-    // ===== 會話數據管理 =====
+    // ===== Session Data =====
 
     SessionSwitcher.prototype._setSessions = function(sessions) {
         this.sessions = sessions;
@@ -132,7 +127,6 @@
         }
 
         this._render();
-        this._updateBarVisibility();
     };
 
     SessionSwitcher.prototype._addSession = function(info) {
@@ -149,7 +143,6 @@
         var wasAlreadyActive = (this.activeSessionId === info.session_id);
         this.activeSessionId = info.session_id;
         this._render();
-        this._updateBarVisibility();
 
         if (!wasAlreadyActive && this.onNewSession) {
             this.onNewSession(info);
@@ -193,14 +186,18 @@
         }
 
         this._render();
-        this._updateBarVisibility();
     };
 
-    // ===== 渲染 =====
+    // ===== Render (Sidebar Style) =====
 
-    SessionSwitcher.prototype._updateBarVisibility = function() {
-        if (!this.barEl) return;
-        this.barEl.style.display = 'flex';
+    SessionSwitcher.prototype._getSortedSessions = function() {
+        var statusOrder = { 'waiting': 0, 'active': 1, 'feedback_submitted': 2, 'completed': 3, 'timeout': 4, 'error': 5 };
+        return this.sessions.slice().sort(function(a, b) {
+            var oa = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 9;
+            var ob = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 9;
+            if (oa !== ob) return oa - ob;
+            return 0;
+        });
     };
 
     SessionSwitcher.prototype._render = function() {
@@ -208,33 +205,37 @@
 
         var self = this;
         this.containerEl.innerHTML = '';
+        var sorted = this._getSortedSessions();
 
-        this.sessions.forEach(function(session) {
-            var tab = document.createElement('div');
-            tab.className = 'session-tab' + (session.session_id === self.activeSessionId ? ' active' : '');
-            tab.dataset.sessionId = session.session_id;
+        sorted.forEach(function(session) {
+            var status = session.status || 'waiting';
+            var isActive = session.session_id === self.activeSessionId;
+            var isWaiting = status === 'waiting';
 
-            var statusDot = document.createElement('span');
-            statusDot.className = 'tab-status ' + (session.status || 'waiting');
-            tab.appendChild(statusDot);
+            var item = document.createElement('div');
+            item.className = 'session-item' + (isActive ? ' active' : '') + (isWaiting ? ' waiting-state' : '');
+            item.dataset.sessionId = session.session_id;
+
+            var textGroup = document.createElement('div');
+            textGroup.className = 'session-text-group';
 
             var label = document.createElement('span');
-            label.className = 'tab-label';
-            var name = session.title || session.session_id.substring(0, 8);
-            label.textContent = name;
-            label.title = (session.title || session.session_id) + ' (' + (session.status || 'waiting') + ')';
-            tab.appendChild(label);
+            label.className = 'session-label';
+            label.textContent = session.title || session.session_id.substring(0, 8);
+            textGroup.appendChild(label);
 
-            var closeBtn = document.createElement('span');
-            closeBtn.className = 'tab-close';
-            closeBtn.textContent = '\u00d7';
-            closeBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                self._removeSession(session.session_id);
-            });
-            tab.appendChild(closeBtn);
+            if (isWaiting) {
+                var badge = document.createElement('span');
+                badge.className = 'session-waiting-badge';
+                badge.textContent = '\u7B49\u5F85\u4E2D';
+                textGroup.appendChild(badge);
+            }
 
-            tab.addEventListener('click', function() {
+            item.appendChild(textGroup);
+
+            item.title = (session.title || session.session_id) + ' (' + status + ')';
+
+            item.addEventListener('click', function() {
                 if (self.activeSessionId !== session.session_id) {
                     self.activeSessionId = session.session_id;
                     self._render();
@@ -244,7 +245,7 @@
                 }
             });
 
-            self.containerEl.appendChild(tab);
+            self.containerEl.appendChild(item);
         });
     };
 
@@ -271,5 +272,5 @@
     };
 
     window.MCPFeedback.SessionSwitcher = SessionSwitcher;
-    console.log('[SessionSwitcher] 模組載入完成');
+    console.log('[SessionSwitcher] Module loaded');
 })();

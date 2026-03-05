@@ -583,12 +583,27 @@ class WebFeedbackSession:
         self.images = self._process_images(images)
 
         # 记录用户反馈到对话历史
-        if feedback:
-            self.message_history.append({
+        if feedback or self.images:
+            entry: dict[str, Any] = {
                 "role": "user",
-                "content": feedback,
+                "content": feedback or "",
                 "timestamp": int(time.time() * 1000),
-            })
+            }
+            if self.images:
+                img_list = []
+                for img in self.images:
+                    raw = img.get("data", b"")
+                    if isinstance(raw, bytes):
+                        b64 = base64.b64encode(raw).decode("ascii")
+                    else:
+                        b64 = str(raw)
+                    name = img.get("name", "image.png")
+                    ext = name.rsplit(".", 1)[-1].lower() if "." in name else "png"
+                    mime_map = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "webp": "image/webp"}
+                    media_type = mime_map.get(ext, "image/png")
+                    img_list.append({"data": b64, "media_type": media_type})
+                entry["images"] = img_list
+            self.message_history.append(entry)
 
         # 進入下一步：等待中 → 已提交反饋
         self.next_step("已送出反饋，等待下次 MCP 調用")

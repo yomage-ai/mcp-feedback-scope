@@ -606,6 +606,434 @@ def list_sessions() -> str:
 
 
 @mcp.tool()
+def send_feedback_to_session(
+    session_identifier: Annotated[str, Field(description="目标会话的标题或 ID 前缀，用于匹配目标 session")] = "",
+    message: Annotated[str, Field(description="要发送给目标 session 的反馈/指令内容")] = "",
+) -> str:
+    """Send feedback or instructions to another session, enabling AI-to-AI communication.
+
+    This tool allows a master AI agent to send instructions to a worker session,
+    implementing the orchestration pattern for multi-agent workflows.
+
+    The target session must be in 'waiting' or 'active' state to receive feedback.
+    Use list_sessions first to find available sessions and their identifiers.
+
+    Args:
+        session_identifier: Title or ID prefix of the target session
+        message: Feedback/instruction content to send
+
+    Returns:
+        str: JSON result with status and details
+    """
+    import urllib.error
+    import urllib.request as _urllib_request
+
+    if not message:
+        return json.dumps({"error": "message is required"}, ensure_ascii=False)
+
+    if not session_identifier:
+        return json.dumps({"error": "session_identifier is required"}, ensure_ascii=False)
+
+    try:
+        from .hub import discover_hub
+        from .hub.hub_discovery import _read_lock_file, _is_process_alive, HubInfo
+
+        hub = discover_hub()
+        if not hub:
+            data = _read_lock_file()
+            if not data:
+                return json.dumps({"error": "未找到运行中的 Hub 服务器"}, ensure_ascii=False)
+            pid = data.get("pid", 0)
+            if not _is_process_alive(pid):
+                return json.dumps({"error": "Hub 服务器进程已停止"}, ensure_ascii=False)
+            hub = HubInfo(
+                pid=pid,
+                port=data.get("port", 0),
+                host=data.get("host", "127.0.0.1"),
+                token=data.get("token", ""),
+                started_at=data.get("started_at", 0),
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Hub-Token": hub.token,
+        }
+
+        # 获取所有活跃会话
+        req = _urllib_request.Request(
+            f"{hub.url}/api/all-sessions",
+            headers=headers,
+            method="GET",
+        )
+        resp = _urllib_request.urlopen(req, timeout=10)
+        sessions_data = json.loads(resp.read().decode())
+        sessions = sessions_data.get("sessions", [])
+
+        if not sessions:
+            return json.dumps({"error": "当前没有活跃的会话"}, ensure_ascii=False)
+
+        # 按标识符匹配目标 session
+        target = None
+
+        # 精确 ID 匹配
+        for s in sessions:
+            if s.get("session_id") == session_identifier:
+                target = s
+                break
+
+        # ID 前缀匹配
+        if not target:
+            matches = [s for s in sessions if s.get("session_id", "").startswith(session_identifier)]
+            if len(matches) == 1:
+                target = matches[0]
+
+        # 标题精确匹配
+        if not target:
+            for s in sessions:
+                if s.get("title", "") == session_identifier:
+                    target = s
+                    break
+
+        # 标题包含匹配
+        if not target:
+            matches = [s for s in sessions if session_identifier in s.get("title", "")]
+            if len(matches) == 1:
+                target = matches[0]
+            elif len(matches) > 1:
+                titles = [f"{s.get('session_id', '')[:8]}: {s.get('title', '')}" for s in matches]
+                return json.dumps({
+                    "error": f"找到 {len(matches)} 个匹配的会话，请使用更精确的标识符",
+                    "matches": titles,
+                }, ensure_ascii=False)
+
+        if not target:
+            available = [
+                {"id": s.get("session_id", "")[:8], "title": s.get("title", ""), "status": s.get("status", "")}
+                for s in sessions
+            ]
+            return json.dumps({
+                "error": f"未找到匹配 '{session_identifier}' 的会话",
+                "available_sessions": available,
+            }, ensure_ascii=False)
+
+        target_id = target["session_id"]
+        target_status = target.get("status", "")
+
+        if target_status not in ("waiting", "active"):
+            return json.dumps({
+                "error": f"目标会话状态为 '{target_status}'，只有 waiting/active 状态的会话才能接收反馈",
+                "session_id": target_id[:8],
+                "title": target.get("title", ""),
+            }, ensure_ascii=False)
+
+        # 提交反馈到目标 session
+        payload = json.dumps({
+            "feedback": message,
+            "images": [],
+            "settings": {},
+        }).encode()
+
+        submit_req = _urllib_request.Request(
+            f"{hub.url}/api/session/{target_id}/submit-feedback",
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        submit_resp = _urllib_request.urlopen(submit_req, timeout=10)
+        result = json.loads(submit_resp.read().decode())
+
+        if result.get("status") == "ok":
+            debug_log(f"send_feedback_to_session: 成功向 {target_id[:8]} 发送指令")
+            return json.dumps({
+                "status": "ok",
+                "message": f"指令已发送到会话 [{target_id[:8]}] {target.get('title', '')}",
+                "session_id": target_id[:8],
+                "title": target.get("title", ""),
+            }, ensure_ascii=False)
+        else:
+            return json.dumps({
+                "error": f"提交失败: {result.get('error', '未知错误')}",
+            }, ensure_ascii=False)
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else ""
+        return json.dumps({"error": f"HTTP {e.code}: {error_body}"}, ensure_ascii=False)
+    except (urllib.error.URLError, OSError) as e:
+        return json.dumps({"error": f"无法连接到 Hub 服务器: {e}"}, ensure_ascii=False)
+    except Exception as e:
+        debug_log(f"send_feedback_to_session 异常: {e}")
+        return json.dumps({"error": f"发送失败: {e!s}"}, ensure_ascii=False)
+
+
+@mcp.tool()
+def get_session_status(
+    session_identifier: Annotated[str, Field(description="目标会话的标题或 ID 前缀，留空则返回所有会话的状态")] = "",
+) -> str:
+    """Get the status and message history of a feedback session.
+
+    Use this tool to monitor worker sessions and check their progress.
+    Returns session status, latest messages, and conversation history.
+
+    If session_identifier is empty, returns a summary of all active sessions.
+    If specified, returns detailed info for the matching session.
+
+    Args:
+        session_identifier: Title or ID prefix of the target session (empty for all)
+
+    Returns:
+        str: JSON with session status, message history, and details
+    """
+    import urllib.error
+    import urllib.request as _urllib_request
+
+    try:
+        from .hub import discover_hub
+        from .hub.hub_discovery import _read_lock_file, _is_process_alive, HubInfo
+
+        hub = discover_hub()
+        if not hub:
+            data = _read_lock_file()
+            if not data:
+                return json.dumps({"error": "未找到运行中的 Hub 服务器"}, ensure_ascii=False)
+            pid = data.get("pid", 0)
+            if not _is_process_alive(pid):
+                return json.dumps({"error": "Hub 服务器进程已停止"}, ensure_ascii=False)
+            hub = HubInfo(
+                pid=pid,
+                port=data.get("port", 0),
+                host=data.get("host", "127.0.0.1"),
+                token=data.get("token", ""),
+                started_at=data.get("started_at", 0),
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Hub-Token": hub.token,
+        }
+
+        # 获取所有活跃会话
+        req = _urllib_request.Request(
+            f"{hub.url}/api/all-sessions",
+            headers=headers,
+            method="GET",
+        )
+        resp = _urllib_request.urlopen(req, timeout=10)
+        sessions_data = json.loads(resp.read().decode())
+        sessions = sessions_data.get("sessions", [])
+
+        if not session_identifier:
+            summary = []
+            for s in sessions:
+                summary.append({
+                    "session_id": s.get("session_id", "")[:8],
+                    "title": s.get("title", ""),
+                    "status": s.get("status", ""),
+                    "project_directory": s.get("project_directory", ""),
+                })
+            return json.dumps({
+                "total": len(summary),
+                "sessions": summary,
+            }, ensure_ascii=False, indent=2)
+
+        # 匹配目标 session
+        target = None
+        for s in sessions:
+            if s.get("session_id") == session_identifier:
+                target = s
+                break
+        if not target:
+            matches = [s for s in sessions if s.get("session_id", "").startswith(session_identifier)]
+            if len(matches) == 1:
+                target = matches[0]
+        if not target:
+            for s in sessions:
+                if s.get("title", "") == session_identifier:
+                    target = s
+                    break
+        if not target:
+            matches = [s for s in sessions if session_identifier in s.get("title", "")]
+            if len(matches) == 1:
+                target = matches[0]
+
+        if not target:
+            available = [f"{s.get('session_id', '')[:8]}: {s.get('title', '')}" for s in sessions]
+            return json.dumps({
+                "error": f"未找到匹配 '{session_identifier}' 的会话",
+                "available": available,
+            }, ensure_ascii=False)
+
+        target_id = target["session_id"]
+
+        # 获取会话详情
+        detail_req = _urllib_request.Request(
+            f"{hub.url}/api/session/{target_id}",
+            headers=headers,
+            method="GET",
+        )
+        detail_resp = _urllib_request.urlopen(detail_req, timeout=10)
+        detail = json.loads(detail_resp.read().decode())
+
+        history = detail.get("message_history", [])
+        result = {
+            "session_id": target_id[:8],
+            "title": detail.get("title", ""),
+            "status": detail.get("status", ""),
+            "project_directory": detail.get("project_directory", ""),
+            "summary": detail.get("summary", ""),
+            "message_count": len(history),
+            "message_history": history[-10:] if len(history) > 10 else history,
+            "feedback_result": detail.get("feedback_result", ""),
+        }
+        return json.dumps(result, ensure_ascii=False, indent=2)
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else ""
+        return json.dumps({"error": f"HTTP {e.code}: {error_body}"}, ensure_ascii=False)
+    except (urllib.error.URLError, OSError) as e:
+        return json.dumps({"error": f"无法连接到 Hub 服务器: {e}"}, ensure_ascii=False)
+    except Exception as e:
+        debug_log(f"get_session_status 异常: {e}")
+        return json.dumps({"error": f"获取状态失败: {e!s}"}, ensure_ascii=False)
+
+
+@mcp.tool()
+async def wait_for_session_completion(
+    session_identifier: Annotated[str, Field(description="目标会话的标题或 ID 前缀")] = "",
+    poll_interval: Annotated[int, Field(description="轮询间隔秒数，检查会话状态的频率")] = 5,
+    max_wait: Annotated[int, Field(description="最大等待时间秒数，超过后返回当前状态")] = 300,
+) -> str:
+    """Wait for a worker session to complete its task and return the result.
+
+    This tool polls the target session until it transitions from 'waiting' to
+    'feedback_submitted' or 'completed', meaning the worker agent has finished
+    processing and submitted its results.
+
+    Useful for orchestration: send an instruction, then wait for completion.
+
+    Args:
+        session_identifier: Title or ID prefix of the target session
+        poll_interval: Seconds between status checks (default: 5)
+        max_wait: Maximum seconds to wait before returning (default: 300)
+
+    Returns:
+        str: JSON with final session status, message history, and result
+    """
+    import time as _time
+    import urllib.error
+    import urllib.request as _urllib_request
+
+    if not session_identifier:
+        return json.dumps({"error": "session_identifier is required"}, ensure_ascii=False)
+
+    poll_interval = max(2, min(poll_interval, 60))
+    max_wait = max(5, min(max_wait, 3600))
+
+    try:
+        from .hub import discover_hub
+        from .hub.hub_discovery import _read_lock_file, _is_process_alive, HubInfo
+
+        def _get_hub() -> "HubInfo | None":
+            hub = discover_hub()
+            if hub:
+                return hub
+            data = _read_lock_file()
+            if not data:
+                return None
+            pid = data.get("pid", 0)
+            if not _is_process_alive(pid):
+                return None
+            return HubInfo(
+                pid=pid,
+                port=data.get("port", 0),
+                host=data.get("host", "127.0.0.1"),
+                token=data.get("token", ""),
+                started_at=data.get("started_at", 0),
+            )
+
+        hub = _get_hub()
+        if not hub:
+            return json.dumps({"error": "未找到运行中的 Hub 服务器"}, ensure_ascii=False)
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Hub-Token": hub.token,
+        }
+
+        # 首先找到目标 session ID
+        req = _urllib_request.Request(f"{hub.url}/api/all-sessions", headers=headers, method="GET")
+        resp = _urllib_request.urlopen(req, timeout=10)
+        sessions = json.loads(resp.read().decode()).get("sessions", [])
+
+        target = None
+        for s in sessions:
+            sid = s.get("session_id", "")
+            title = s.get("title", "")
+            if sid == session_identifier or sid.startswith(session_identifier) or title == session_identifier or session_identifier in title:
+                target = s
+                break
+
+        if not target:
+            available = [f"{s.get('session_id', '')[:8]}: {s.get('title', '')}" for s in sessions]
+            return json.dumps({
+                "error": f"未找到匹配 '{session_identifier}' 的会话",
+                "available": available,
+            }, ensure_ascii=False)
+
+        target_id = target["session_id"]
+        start_time = _time.time()
+
+        # 轮询等待状态变化
+        while (_time.time() - start_time) < max_wait:
+            try:
+                detail_req = _urllib_request.Request(
+                    f"{hub.url}/api/session/{target_id}",
+                    headers=headers,
+                    method="GET",
+                )
+                detail_resp = _urllib_request.urlopen(detail_req, timeout=10)
+                detail = json.loads(detail_resp.read().decode())
+
+                status = detail.get("status", "")
+                elapsed = int(_time.time() - start_time)
+
+                # 完成条件：已提交反馈、已完成、错误、超时
+                if status in ("feedback_submitted", "completed", "error", "timeout"):
+                    history = detail.get("message_history", [])
+                    return json.dumps({
+                        "status": "completed",
+                        "session_status": status,
+                        "session_id": target_id[:8],
+                        "title": detail.get("title", ""),
+                        "elapsed_seconds": elapsed,
+                        "summary": detail.get("summary", ""),
+                        "feedback_result": detail.get("feedback_result", ""),
+                        "message_count": len(history),
+                        "latest_messages": history[-5:] if history else [],
+                    }, ensure_ascii=False, indent=2)
+
+                debug_log(f"wait_for_session_completion: {target_id[:8]} 状态={status}，已等待 {elapsed}s")
+
+            except (urllib.error.URLError, OSError):
+                debug_log("wait_for_session_completion: Hub 连接中断，重试...")
+
+            import asyncio as _asyncio
+            await _asyncio.sleep(poll_interval)
+
+        # 超过最大等待时间
+        return json.dumps({
+            "status": "timeout",
+            "message": f"等待超过 {max_wait} 秒，会话仍未完成",
+            "session_id": target_id[:8],
+            "title": target.get("title", ""),
+            "elapsed_seconds": max_wait,
+        }, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        debug_log(f"wait_for_session_completion 异常: {e}")
+        return json.dumps({"error": f"等待失败: {e!s}"}, ensure_ascii=False)
+
+
+@mcp.tool()
 def get_system_info() -> str:
     """
     獲取系統環境資訊
