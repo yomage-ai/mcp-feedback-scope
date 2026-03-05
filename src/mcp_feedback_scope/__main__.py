@@ -6,8 +6,11 @@ MCP Interactive Feedback Enhanced - 主程式入口
 此檔案允許套件透過 `python -m mcp_feedback_scope` 執行。
 
 使用方法:
-  python -m mcp_feedback_scope        # 啟動 MCP 伺服器
-  python -m mcp_feedback_scope test   # 執行測試
+  python -m mcp_feedback_scope              # 啟動 MCP 伺服器
+  python -m mcp_feedback_scope test         # 執行測試
+  python -m mcp_feedback_scope feedback list                   # 列出活跃会话
+  python -m mcp_feedback_scope feedback send <session> <msg>   # 发送反馈
+  python -m mcp_feedback_scope feedback send --latest <msg>    # 发送到最新会话
 """
 
 import argparse
@@ -57,16 +60,47 @@ def main():
     # 版本命令
     subparsers.add_parser("version", help="顯示版本資訊")
 
+    # feedback 命令组 - 通过 CLI 与会话交互
+    feedback_parser = subparsers.add_parser(
+        "feedback", help="通过命令行与反馈会话交互"
+    )
+    feedback_sub = feedback_parser.add_subparsers(
+        dest="feedback_command", help="反馈子命令"
+    )
+
+    # feedback list
+    feedback_sub.add_parser("list", help="列出所有活跃的反馈会话")
+
+    # feedback send
+    send_parser = feedback_sub.add_parser("send", help="向指定会话发送反馈")
+    send_parser.add_argument(
+        "session", nargs="?", default=None,
+        help="目标会话 ID 或标题（可省略，自动选择最新等待会话）",
+    )
+    send_parser.add_argument(
+        "message", nargs="?", default=None,
+        help="反馈内容（可省略，从 stdin 读取）",
+    )
+    send_parser.add_argument(
+        "--latest", action="store_true",
+        help="自动选择最新的等待中会话",
+    )
+    send_parser.add_argument(
+        "--title", type=str, default=None,
+        help="通过会话标题匹配目标会话",
+    )
+
     args = parser.parse_args()
 
     if args.command == "test":
         run_tests(args)
     elif args.command == "version":
         show_version()
+    elif args.command == "feedback":
+        run_feedback(args)
     elif args.command == "server" or args.command is None:
         run_server()
     else:
-        # 不應該到達這裡
         parser.print_help()
         sys.exit(1)
 
@@ -76,6 +110,19 @@ def run_server():
     from .server import main as server_main
 
     return server_main()
+
+
+def run_feedback(args):
+    """执行 feedback 子命令"""
+    from .cli.feedback_cli import cmd_interactive, cmd_list, cmd_send
+
+    if args.feedback_command == "list":
+        sys.exit(cmd_list(args))
+    elif args.feedback_command == "send":
+        sys.exit(cmd_send(args))
+    else:
+        # 无子命令时进入交互模式
+        sys.exit(cmd_interactive(args))
 
 
 def run_tests(args):

@@ -218,6 +218,7 @@ def setup_routes(manager: "WebUIManager"):
             for session_id, session in manager.sessions.items():
                 session_info = {
                     "session_id": session.session_id,
+                    "title": session.title,
                     "project_directory": session.project_directory,
                     "summary": session.summary,
                     "status": session.status.value,
@@ -745,6 +746,7 @@ def setup_routes(manager: "WebUIManager"):
             data = await request.json()
             project_directory = data.get("project_directory", "")
             summary = data.get("summary", "")
+            title = data.get("title", "")
 
             if not project_directory or not summary:
                 return JSONResponse(
@@ -752,8 +754,8 @@ def setup_routes(manager: "WebUIManager"):
                     content={"error": "project_directory and summary are required"},
                 )
 
-            session_id = manager.create_session(project_directory, summary)
-            debug_log(f"內部 API: 遠端會話已註冊 {session_id[:8]}")
+            session_id = manager.create_session(project_directory, summary, title=title)
+            debug_log(f"內部 API: 遠端會話已註冊 {session_id[:8]}, title={title or '(空)'}")
 
             return JSONResponse(
                 content={
@@ -831,6 +833,53 @@ def setup_routes(manager: "WebUIManager"):
         debug_log(f"內部 API: 會話 {session_id[:8]} 已註銷")
 
         return JSONResponse(content={"status": "removed"})
+
+    # ===== CLI 反馈提交 API =====
+
+    @manager.app.post("/api/session/{session_id}/submit-feedback")
+    async def api_submit_feedback(session_id: str, request: Request):
+        """通过 HTTP POST 提交反馈，供 CLI 等非浏览器客户端使用"""
+        if not _verify_hub_token(request):
+            return JSONResponse(status_code=403, content={"error": "Invalid token"})
+
+        session = manager.get_session(session_id)
+        if not session:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Session {session_id} not found"},
+            )
+
+        if session.feedback_completed.is_set():
+            return JSONResponse(
+                status_code=409,
+                content={"error": "Feedback already submitted for this session"},
+            )
+
+        try:
+            data = await request.json()
+            feedback = data.get("feedback", "")
+            images = data.get("images", [])
+            settings = data.get("settings", {})
+
+            if not feedback and not images:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "feedback or images required"},
+                )
+
+            await session.submit_feedback(feedback, images, settings)
+            await manager.notify_lobby_session_changed(session, "feedback_submitted")
+            debug_log(f"CLI API: 會話 {session_id[:8]} 收到反馈")
+
+            return JSONResponse(
+                content={"status": "ok", "session_id": session_id}
+            )
+        except Exception as e:
+            debug_log(f"CLI API: 提交反馈失败: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Submit feedback failed: {e!s}"},
+            )
 
 
 async def handle_websocket_message(manager: "WebUIManager", session, data: dict):

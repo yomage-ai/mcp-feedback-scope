@@ -56,6 +56,8 @@ class HubClient:
         project_directory: str,
         summary: str,
         timeout: int = 600,
+        *,
+        title: str = "",
     ) -> str:
         """
         向 Hub 註冊新會話。
@@ -64,6 +66,7 @@ class HubClient:
             project_directory: 專案目錄路徑
             summary: AI 工作摘要
             timeout: 回饋等待超時時間
+            title: 會話標題
 
         Returns:
             會話 ID
@@ -75,6 +78,7 @@ class HubClient:
                 "project_directory": project_directory,
                 "summary": summary,
                 "timeout": timeout,
+                "title": title,
             },
         )
         session_id = result.get("session_id", "")
@@ -138,6 +142,40 @@ class HubClient:
         # 總超時
         self.unregister_session(session_id)
         raise TimeoutError(f"Feedback timeout after {timeout}s for session {session_id}")
+
+    def submit_feedback(
+        self,
+        session_id: str,
+        feedback: str,
+        images: list[dict] | None = None,
+    ) -> dict[str, Any]:
+        """
+        向指定会话提交反馈。
+
+        Args:
+            session_id: 会话 ID
+            feedback: 反馈文本
+            images: 图片列表
+
+        Returns:
+            API 响应字典
+        """
+        result = self._make_request(
+            "POST",
+            f"/api/session/{session_id}/submit-feedback",
+            data={
+                "feedback": feedback,
+                "images": images or [],
+                "settings": {},
+            },
+        )
+        debug_log(f"远端会话 {session_id[:8]} 已提交反馈")
+        return result
+
+    def list_sessions(self) -> list[dict[str, Any]]:
+        """获取所有活跃会话列表"""
+        result = self._make_request("GET", "/api/all-sessions")
+        return result.get("sessions", [])
 
     def unregister_session(self, session_id: str):
         """從 Hub 註銷會話"""

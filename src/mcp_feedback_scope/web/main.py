@@ -1135,7 +1135,9 @@ async def launch_web_feedback_ui(
 
     if hub_info:
         debug_log(f"[入口] 走遠端客戶端路徑，Hub={hub_info.url}")
-        return await _launch_as_remote_client(hub_info, project_directory, summary, timeout)
+        return await _launch_as_remote_client(
+            hub_info, project_directory, summary, timeout, session_title=session_title
+        )
     else:
         debug_log("[入口] 走 Hub Owner 路徑")
         return await _launch_as_hub_owner(project_directory, summary, timeout, session_title=session_title)
@@ -1146,6 +1148,8 @@ async def _launch_as_remote_client(
     project_directory: str,
     summary: str,
     timeout: int,
+    *,
+    session_title: str = "",
 ) -> dict:
     """作為遠端客戶端向已有 Hub 註冊會話"""
     from ..hub import HubClient
@@ -1154,12 +1158,16 @@ async def _launch_as_remote_client(
     client = HubClient(hub_info)
 
     try:
-        session_id = client.register_session(project_directory, summary, timeout)
+        session_id = client.register_session(
+            project_directory, summary, timeout, title=session_title
+        )
         debug_log(f"遠端會話 {session_id[:8]} 已註冊到 Hub")
         return await client.wait_for_feedback(session_id, timeout)
     except ConnectionError:
         debug_log("Hub 連接失敗，回退到本地模式")
-        return await _launch_as_hub_owner(project_directory, summary, timeout)
+        return await _launch_as_hub_owner(
+            project_directory, summary, timeout, session_title=session_title
+        )
 
 
 async def _launch_as_hub_owner(
