@@ -162,6 +162,9 @@
         for (var i = 0; i < this.sessions.length; i++) {
             if (this.sessions[i].session_id === info.session_id) {
                 this.sessions[i].status = info.status;
+                if (info.title !== undefined) {
+                    this.sessions[i].title = info.title;
+                }
                 break;
             }
         }
@@ -197,7 +200,7 @@
 
     SessionSwitcher.prototype._updateBarVisibility = function() {
         if (!this.barEl) return;
-        this.barEl.style.display = this.sessions.length > 1 ? 'flex' : 'none';
+        this.barEl.style.display = 'flex';
     };
 
     SessionSwitcher.prototype._render = function() {
@@ -217,10 +220,9 @@
 
             var label = document.createElement('span');
             label.className = 'tab-label';
-            var dir = session.project_directory || '';
-            var name = dir.split(/[/\\]/).pop() || dir || session.session_id.substring(0, 8);
+            var name = session.title || session.session_id.substring(0, 8);
             label.textContent = name;
-            label.title = dir + ' (' + (session.status || 'waiting') + ')';
+            label.title = (session.title || session.session_id) + ' (' + (session.status || 'waiting') + ')';
             tab.appendChild(label);
 
             var closeBtn = document.createElement('span');

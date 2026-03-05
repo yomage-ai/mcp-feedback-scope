@@ -433,6 +433,7 @@ class WebUIManager:
                 "summary": session.summary,
                 "status": session.status.value,
                 "created_at": int(session.created_at * 1000),
+                "title": session.title,
             },
         }
         dead_connections = []
@@ -460,6 +461,7 @@ class WebUIManager:
                 "session_id": session.session_id,
                 "status": session.status.value,
                 "project_directory": session.project_directory,
+                "title": session.title,
             },
         }
         dead_connections = []

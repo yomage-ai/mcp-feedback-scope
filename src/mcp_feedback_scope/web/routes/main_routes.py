@@ -367,6 +367,7 @@ def setup_routes(manager: "WebUIManager"):
                     "summary": s.summary,
                     "status": s.status.value,
                     "created_at": int(s.created_at * 1000),
+                    "title": s.title,
                 }
                 for s in active_sessions
             ]
@@ -398,6 +399,7 @@ def setup_routes(manager: "WebUIManager"):
                                     "summary": s.summary,
                                     "status": s.status.value,
                                     "created_at": int(s.created_at * 1000),
+                                    "title": s.title,
                                 }
                                 for s in active
                             ],
