@@ -15,7 +15,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from mcp_feedback_enhanced.utils.memory_monitor import (
+from mcp_feedback_scope.utils.memory_monitor import (
     MemoryAlert,
     MemoryMonitor,
     MemorySnapshot,
@@ -84,7 +84,7 @@ class TestMemoryMonitor:
         assert len(monitor.snapshots) == 0
         assert len(monitor.alerts) == 0
 
-    @patch("mcp_feedback_enhanced.utils.memory_monitor.psutil")
+    @patch("mcp_feedback_scope.utils.memory_monitor.psutil")
     def test_collect_memory_snapshot(self, mock_psutil):
         """測試內存快照收集"""
         # 模擬 psutil 返回值
@@ -145,7 +145,7 @@ class TestMemoryMonitor:
         assert cleanup_callback not in monitor.cleanup_callbacks
         assert alert_callback not in monitor.alert_callbacks
 
-    @patch("mcp_feedback_enhanced.utils.memory_monitor.gc")
+    @patch("mcp_feedback_scope.utils.memory_monitor.gc")
     def test_cleanup_triggering(self, mock_gc):
         """測試清理觸發"""
         monitor = MemoryMonitor()
@@ -170,7 +170,7 @@ class TestMemoryMonitor:
         # 緊急清理會調用多次垃圾回收
         assert mock_gc.collect.call_count == 3
 
-    @patch("mcp_feedback_enhanced.utils.memory_monitor.psutil")
+    @patch("mcp_feedback_scope.utils.memory_monitor.psutil")
     def test_memory_usage_checking(self, mock_psutil):
         """測試內存使用檢查和警告觸發"""
         monitor = MemoryMonitor(
@@ -271,7 +271,7 @@ class TestMemoryMonitor:
 
         assert monitor._analyze_memory_trend() == "increasing"
 
-    @patch("mcp_feedback_enhanced.utils.memory_monitor.psutil")
+    @patch("mcp_feedback_scope.utils.memory_monitor.psutil")
     def test_get_current_memory_info(self, mock_psutil):
         """測試獲取當前內存信息"""
         # 模擬 psutil 返回值

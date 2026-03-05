@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 
 # 移除手動路徑操作，讓 mypy 和 pytest 使用正確的模組解析
-from mcp_feedback_enhanced.web.utils.port_manager import PortManager
+from mcp_feedback_scope.web.utils.port_manager import PortManager
 
 
 class TestPortManager:
@@ -193,14 +193,14 @@ class TestPortManager:
             for server in servers:
                 server.close()
 
-    @patch("mcp_feedback_enhanced.web.utils.port_manager.psutil.Process")
+    @patch("mcp_feedback_scope.web.utils.port_manager.psutil.Process")
     def test_should_cleanup_process_mcp_process(self, mock_process):
         """測試是否應該清理 MCP 相關進程"""
         # 模擬 MCP 相關進程
         process_info = {
             "pid": 1234,
             "name": "python.exe",
-            "cmdline": "python -m mcp-feedback-enhanced test --web",
+            "cmdline": "python -m mcp-feedback-scope test --web",
             "create_time": time.time(),
             "status": "running",
         }
@@ -208,7 +208,7 @@ class TestPortManager:
         result = PortManager._should_cleanup_process(process_info)
         assert result is True
 
-    @patch("mcp_feedback_enhanced.web.utils.port_manager.psutil.Process")
+    @patch("mcp_feedback_scope.web.utils.port_manager.psutil.Process")
     def test_should_cleanup_process_other_process(self, mock_process):
         """測試是否應該清理其他進程"""
         # 模擬其他進程

@@ -206,10 +206,10 @@ def build_tauri_app_multiplatform(project_root: Path, release: bool = True):
 
     # 定義目標平台
     targets = [
-        ("x86_64-pc-windows-msvc", "mcp-feedback-enhanced-desktop.exe"),
-        ("x86_64-apple-darwin", "mcp-feedback-enhanced-desktop"),
-        ("aarch64-apple-darwin", "mcp-feedback-enhanced-desktop"),
-        ("x86_64-unknown-linux-gnu", "mcp-feedback-enhanced-desktop"),
+        ("x86_64-pc-windows-msvc", "mcp-feedback-scope-desktop.exe"),
+        ("x86_64-apple-darwin", "mcp-feedback-scope-desktop"),
+        ("aarch64-apple-darwin", "mcp-feedback-scope-desktop"),
+        ("x86_64-unknown-linux-gnu", "mcp-feedback-scope-desktop"),
     ]
 
     successful_builds = []
@@ -231,7 +231,7 @@ def build_tauri_app_multiplatform(project_root: Path, release: bool = True):
             "cargo",
             "build",
             "--bin",
-            "mcp-feedback-enhanced-desktop",
+            "mcp-feedback-scope-desktop",
             "--target",
             target,
         ]
@@ -277,15 +277,15 @@ def copy_multiplatform_artifacts(
     build_type = "release" if release else "debug"
 
     # 創建目標目錄
-    desktop_dir = project_root / "src" / "mcp_feedback_enhanced" / "desktop_release"
+    desktop_dir = project_root / "src" / "mcp_feedback_scope" / "desktop_release"
     desktop_dir.mkdir(parents=True, exist_ok=True)
 
     # 定義平台到文件名的映射
     platform_mapping = {
-        "x86_64-pc-windows-msvc": "mcp-feedback-enhanced-desktop.exe",
-        "x86_64-apple-darwin": "mcp-feedback-enhanced-desktop-macos-intel",
-        "aarch64-apple-darwin": "mcp-feedback-enhanced-desktop-macos-arm64",
-        "x86_64-unknown-linux-gnu": "mcp-feedback-enhanced-desktop-linux",
+        "x86_64-pc-windows-msvc": "mcp-feedback-scope-desktop.exe",
+        "x86_64-apple-darwin": "mcp-feedback-scope-desktop-macos-intel",
+        "aarch64-apple-darwin": "mcp-feedback-scope-desktop-macos-arm64",
+        "x86_64-unknown-linux-gnu": "mcp-feedback-scope-desktop-linux",
     }
 
     copied_files = []
@@ -328,8 +328,8 @@ def copy_desktop_python_module(project_root: Path):
     print("📦 複製桌面應用 Python 模組...")
 
     # 源路徑和目標路徑
-    python_src = project_root / "src-tauri" / "python" / "mcp_feedback_enhanced_desktop"
-    python_dst = project_root / "src" / "mcp_feedback_enhanced" / "desktop_app"
+    python_src = project_root / "src-tauri" / "python" / "mcp_feedback_scope_desktop"
+    python_dst = project_root / "src" / "mcp_feedback_scope" / "desktop_app"
 
     if not python_src.exists():
         print(f"⚠️  源模組不存在: {python_src}")
@@ -359,7 +359,7 @@ def main():
   python scripts/build_desktop.py --clean        # 清理構建產物
 
 構建完成後，可以使用以下命令測試:
-  python -m mcp_feedback_enhanced test --desktop
+  python -m mcp_feedback_scope test --desktop
 
 或使用 Makefile:
   make build-desktop          # 構建 Debug 版本
@@ -415,16 +415,16 @@ def main():
         print("🎉 多平台桌面應用程式構建完成！")
         print("")
         print("📍 構建產物位置:")
-        print("   多平台二進制檔案: src/mcp_feedback_enhanced/desktop_release/")
-        print("   桌面應用模組: src/mcp_feedback_enhanced/desktop_app/")
-        print("   開發環境模組: src-tauri/python/mcp_feedback_enhanced_desktop/")
+        print("   多平台二進制檔案: src/mcp_feedback_scope/desktop_release/")
+        print("   桌面應用模組: src/mcp_feedback_scope/desktop_app/")
+        print("   開發環境模組: src-tauri/python/mcp_feedback_scope_desktop/")
         print("")
         print("🌍 支援的平台:")
         for target, _ in successful_builds:
             print(f"   ✅ {target}")
         print("")
         print("🚀 下一步:")
-        print("   測試桌面應用程式: python -m mcp_feedback_enhanced test --desktop")
+        print("   測試桌面應用程式: python -m mcp_feedback_scope test --desktop")
         print("   或使用 Makefile: make test-desktop")
         print("   構建發布包: make build-all")
 

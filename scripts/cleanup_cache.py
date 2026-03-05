@@ -239,7 +239,7 @@ def force_clean_cache():
                     for name in ["uvx", "uv.exe", "python.exe"]
                 ):
                     cmdline = " ".join(proc.info["cmdline"] or [])
-                    if "mcp-feedback-enhanced" in cmdline or "uvx" in cmdline:
+                    if "mcp-feedback-scope" in cmdline or "uvx" in cmdline:
                         print(
                             f"  終止程序: {proc.info['name']} (PID: {proc.info['pid']})"
                         )

@@ -56,7 +56,7 @@ python scripts/cleanup_cache.py --force
    ```bash
    # Windows
    taskkill /f /im uvx.exe
-   taskkill /f /im python.exe /fi "WINDOWTITLE eq *mcp-feedback-enhanced*"
+   taskkill /f /im python.exe /fi "WINDOWTITLE eq *mcp-feedback-scope*"
 
    # Then execute cleanup
    uv cache clean
@@ -64,7 +64,7 @@ python scripts/cleanup_cache.py --force
 
 ### Issue: Cache grows large again quickly after cleanup
 
-**Cause**: Frequent use of `uvx mcp-feedback-enhanced@latest`
+**Cause**: Frequent use of `uvx mcp-feedback-scope@latest`
 
 **Recommendations**:
 1. **Regular cleanup**: Recommend weekly or monthly cleanup
@@ -138,5 +138,5 @@ python scripts/cleanup_cache.py --clean
 
 If you encounter cleanup issues, please:
 1. Check the troubleshooting section in this document
-2. Report issues on [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-enhanced/issues)
+2. Report issues on [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-scope/issues)
 3. Provide error messages and system information

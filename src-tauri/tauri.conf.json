@@ -1,9 +1,9 @@
 {
   "productName": "MCP Feedback Enhanced",
   "version": "2.4.3",
-  "identifier": "com.minidoracat.mcp-feedback-enhanced",
+  "identifier": "com.minidoracat.mcp-feedback-scope",
   "build": {
-    "frontendDist": "../src/mcp_feedback_enhanced/web/static",
+    "frontendDist": "../src/mcp_feedback_scope/web/static",
     "devUrl": "http://127.0.0.1:8765",
     "beforeDevCommand": "",
     "beforeBuildCommand": ""

@@ -43,19 +43,19 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            binary: mcp-feedback-enhanced-desktop.exe
+            binary: mcp-feedback-scope-desktop.exe
             name: windows
           - os: macos-latest
             target: x86_64-apple-darwin
-            binary: mcp-feedback-enhanced-desktop
+            binary: mcp-feedback-scope-desktop
             name: macos-intel
           - os: macos-latest
             target: aarch64-apple-darwin
-            binary: mcp-feedback-enhanced-desktop
+            binary: mcp-feedback-scope-desktop
             name: macos-arm64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            binary: mcp-feedback-enhanced-desktop
+            binary: mcp-feedback-scope-desktop
             name: linux
 
     runs-on: ${{ matrix.os }}
@@ -142,7 +142,7 @@ jobs:
       run: |
         cd src-tauri
         echo "🔨 開始構建 ${{ matrix.name }} (${{ matrix.target }})..."
-        cargo build --release --target ${{ matrix.target }} --bin mcp-feedback-enhanced-desktop
+        cargo build --release --target ${{ matrix.target }} --bin mcp-feedback-scope-desktop
         echo "✅ 構建完成"
 
     - name: Verify build output
@@ -291,19 +291,19 @@ jobs:
         echo "📦 準備桌面二進制文件以提交到 Git..."
 
         # 創建桌面應用目錄
-        mkdir -p src/mcp_feedback_enhanced/desktop_release
+        mkdir -p src/mcp_feedback_scope/desktop_release
 
         # 確保 __init__.py 存在
-        if [ ! -f "src/mcp_feedback_enhanced/desktop_release/__init__.py" ]; then
-          echo '"""桌面應用程式二進制檔案"""' > src/mcp_feedback_enhanced/desktop_release/__init__.py
+        if [ ! -f "src/mcp_feedback_scope/desktop_release/__init__.py" ]; then
+          echo '"""桌面應用程式二進制檔案"""' > src/mcp_feedback_scope/desktop_release/__init__.py
         fi
 
         # 定義平台映射
         declare -A PLATFORM_MAP=(
-          ["desktop-windows"]="mcp-feedback-enhanced-desktop.exe"
-          ["desktop-macos-intel"]="mcp-feedback-enhanced-desktop-macos-intel"
-          ["desktop-macos-arm64"]="mcp-feedback-enhanced-desktop-macos-arm64"
-          ["desktop-linux"]="mcp-feedback-enhanced-desktop-linux"
+          ["desktop-windows"]="mcp-feedback-scope-desktop.exe"
+          ["desktop-macos-intel"]="mcp-feedback-scope-desktop-macos-intel"
+          ["desktop-macos-arm64"]="mcp-feedback-scope-desktop-macos-arm64"
+          ["desktop-linux"]="mcp-feedback-scope-desktop-linux"
         )
 
         # 複製並重命名二進制文件
@@ -315,16 +315,16 @@ jobs:
           # 查找該平台的二進制文件
           BINARY_FILE=""
           if [ -d "desktop-artifacts/$platform_dir" ]; then
-            BINARY_FILE=$(find "desktop-artifacts/$platform_dir" -name "mcp-feedback-enhanced-desktop*" -type f | head -1)
+            BINARY_FILE=$(find "desktop-artifacts/$platform_dir" -name "mcp-feedback-scope-desktop*" -type f | head -1)
           fi
 
           if [ -n "$BINARY_FILE" ] && [ -f "$BINARY_FILE" ]; then
             TARGET_NAME="${PLATFORM_MAP[$platform_dir]}"
-            cp "$BINARY_FILE" "src/mcp_feedback_enhanced/desktop_release/$TARGET_NAME"
+            cp "$BINARY_FILE" "src/mcp_feedback_scope/desktop_release/$TARGET_NAME"
 
             # 設置執行權限（非 Windows）
             if [[ "$TARGET_NAME" != *.exe ]]; then
-              chmod +x "src/mcp_feedback_enhanced/desktop_release/$TARGET_NAME"
+              chmod +x "src/mcp_feedback_scope/desktop_release/$TARGET_NAME"
             fi
 
             echo "✅ $platform_dir: $BINARY_FILE -> $TARGET_NAME"
@@ -341,16 +341,16 @@ jobs:
         # 顯示最終文件列表
         echo ""
         echo "📦 最終的桌面應用二進制文件："
-        ls -la src/mcp_feedback_enhanced/desktop_release/
+        ls -la src/mcp_feedback_scope/desktop_release/
 
     - name: Commit desktop binaries
       run: |
         echo "📝 提交桌面二進制文件到 Git..."
 
         # 檢查是否有變更
-        if [ -n "$(git status --porcelain src/mcp_feedback_enhanced/desktop_release/)" ]; then
+        if [ -n "$(git status --porcelain src/mcp_feedback_scope/desktop_release/)" ]; then
           # 添加桌面二進制文件
-          git add src/mcp_feedback_enhanced/desktop_release/
+          git add src/mcp_feedback_scope/desktop_release/
 
           # 提交變更
           git commit -m "🖥️ 更新桌面應用二進制文件 - 自動構建多平台版本 (Run ${{ github.run_id }})"

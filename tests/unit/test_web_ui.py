@@ -81,7 +81,7 @@ class TestWebFeedbackSession:
 
     def test_session_creation(self, test_project_dir):
         """測試會話創建"""
-        from mcp_feedback_enhanced.web.models import WebFeedbackSession
+        from mcp_feedback_scope.web.models import WebFeedbackSession
 
         session = WebFeedbackSession(
             "test-session", str(test_project_dir), TestData.SAMPLE_SESSION["summary"]
@@ -96,7 +96,7 @@ class TestWebFeedbackSession:
 
     def test_session_status_management(self, test_project_dir):
         """測試會話狀態管理"""
-        from mcp_feedback_enhanced.web.models import (
+        from mcp_feedback_scope.web.models import (
             SessionStatus,
             WebFeedbackSession,
         )
@@ -121,7 +121,7 @@ class TestWebFeedbackSession:
 
     def test_session_age_and_idle_time(self, test_project_dir):
         """測試會話年齡和空閒時間"""
-        from mcp_feedback_enhanced.web.models import WebFeedbackSession
+        from mcp_feedback_scope.web.models import WebFeedbackSession
 
         session = WebFeedbackSession(
             "test-session", str(test_project_dir), TestData.SAMPLE_SESSION["summary"]
@@ -140,7 +140,7 @@ class TestWebFeedbackSession:
     @pytest.mark.asyncio
     async def test_session_feedback_submission(self, test_project_dir):
         """測試回饋提交"""
-        from mcp_feedback_enhanced.web.models import (
+        from mcp_feedback_scope.web.models import (
             SessionStatus,
             WebFeedbackSession,
         )

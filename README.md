@@ -21,7 +21,7 @@ This is an [MCP server](https://modelcontextprotocol.io/) that establishes **fee
 **Supported Platforms:** [Cursor](https://www.cursor.com) | [Cline](https://cline.bot) | [Windsurf](https://windsurf.com) | [Augment](https://www.augmentcode.com) | [Trae](https://www.trae.ai)
 
 ### 🔄 Workflow
-1. **AI Call** → `mcp-feedback-enhanced` tool
+1. **AI Call** → `mcp-feedback-scope` tool
 2. **Interface Launch** → Auto-open desktop application or browser interface (based on configuration)
 3. **Smart Interaction** → Prompt selection, text input, image upload, auto-submit
 4. **Real-time Feedback** → WebSocket connection delivers information to AI instantly
@@ -101,9 +101,9 @@ pip install uv
 ```json
 {
   "mcpServers": {
-    "mcp-feedback-enhanced": {
+    "mcp-feedback-scope": {
       "command": "uvx",
-      "args": ["mcp-feedback-enhanced@latest"],
+      "args": ["mcp-feedback-scope@latest"],
       "timeout": 600,
       "autoApprove": ["interactive_feedback"]
     }
@@ -115,9 +115,9 @@ pip install uv
 ```json
 {
   "mcpServers": {
-    "mcp-feedback-enhanced": {
+    "mcp-feedback-scope": {
       "command": "uvx",
-      "args": ["mcp-feedback-enhanced@latest"],
+      "args": ["mcp-feedback-scope@latest"],
       "timeout": 600,
       "env": {
         "MCP_DEBUG": "false",
@@ -135,9 +135,9 @@ pip install uv
 ```json
 {
   "mcpServers": {
-    "mcp-feedback-enhanced": {
+    "mcp-feedback-scope": {
       "command": "uvx",
-      "args": ["mcp-feedback-enhanced@latest"],
+      "args": ["mcp-feedback-scope@latest"],
       "timeout": 600,
       "env": {
         "MCP_DESKTOP_MODE": "true",
@@ -161,7 +161,7 @@ For optimal results, add the following rules to your AI assistant:
 ```
 # MCP Interactive Feedback Rules
 
-follow mcp-feedback-enhanced instructions
+follow mcp-feedback-scope instructions
 ```
 
 ## ⚙️ Advanced Settings
@@ -195,25 +195,25 @@ follow mcp-feedback-enhanced instructions
 ### Testing Options
 ```bash
 # Version check
-uvx mcp-feedback-enhanced@latest version       # Check version
+uvx mcp-feedback-scope@latest version       # Check version
 
 # Interface testing
-uvx mcp-feedback-enhanced@latest test --web    # Test Web UI (auto continuous running)
-uvx mcp-feedback-enhanced@latest test --desktop # Test desktop application (v2.5.0 new feature)
+uvx mcp-feedback-scope@latest test --web    # Test Web UI (auto continuous running)
+uvx mcp-feedback-scope@latest test --desktop # Test desktop application (v2.5.0 new feature)
 
 # Debug mode
-MCP_DEBUG=true uvx mcp-feedback-enhanced@latest test
+MCP_DEBUG=true uvx mcp-feedback-scope@latest test
 
 # Specify language for testing
-MCP_LANGUAGE=en uvx mcp-feedback-enhanced@latest test --web    # Force English interface
-MCP_LANGUAGE=zh-TW uvx mcp-feedback-enhanced@latest test --web  # Force Traditional Chinese
-MCP_LANGUAGE=zh-CN uvx mcp-feedback-enhanced@latest test --web  # Force Simplified Chinese
+MCP_LANGUAGE=en uvx mcp-feedback-scope@latest test --web    # Force English interface
+MCP_LANGUAGE=zh-TW uvx mcp-feedback-scope@latest test --web  # Force Traditional Chinese
+MCP_LANGUAGE=zh-CN uvx mcp-feedback-scope@latest test --web  # Force Simplified Chinese
 ```
 
 ### Developer Installation
 ```bash
-git clone https://github.com/Minidoracat/mcp-feedback-enhanced.git
-cd mcp-feedback-enhanced
+git clone https://github.com/Minidoracat/mcp-feedback-scope.git
+cd mcp-feedback-scope
 uv sync
 ```
 
@@ -225,9 +225,9 @@ make test-web                                            # Web UI testing (conti
 make test-desktop-func                                   # Desktop application functional testing
 
 # Or use direct commands
-uv run python -m mcp_feedback_enhanced test              # Standard functional testing
-uvx --no-cache --with-editable . mcp-feedback-enhanced test --web   # Web UI testing (continuous running)
-uvx --no-cache --with-editable . mcp-feedback-enhanced test --desktop # Desktop application testing
+uv run python -m mcp_feedback_scope test              # Standard functional testing
+uvx --no-cache --with-editable . mcp-feedback-scope test --web   # Web UI testing (continuous running)
+uvx --no-cache --with-editable . mcp-feedback-scope test --desktop # Desktop application testing
 
 # Desktop application build (v2.5.0 new feature)
 make build-desktop                                       # Build desktop application (debug mode)
@@ -275,9 +275,9 @@ Set `"MCP_WEB_HOST": "0.0.0.0"` in MCP configuration to allow remote access:
 ```json
 {
   "mcpServers": {
-    "mcp-feedback-enhanced": {
+    "mcp-feedback-scope": {
       "command": "uvx",
-      "args": ["mcp-feedback-enhanced@latest"],
+      "args": ["mcp-feedback-scope@latest"],
       "timeout": 600,
       "env": {
         "MCP_WEB_HOST": "0.0.0.0",
@@ -314,9 +314,9 @@ A: v2.5.0 introduces cross-platform desktop application support. Set `"MCP_DESKT
 ```json
 {
   "mcpServers": {
-    "mcp-feedback-enhanced": {
+    "mcp-feedback-scope": {
       "command": "uvx",
-      "args": ["mcp-feedback-enhanced@latest"],
+      "args": ["mcp-feedback-scope@latest"],
       "timeout": 600,
       "env": {
         "MCP_DESKTOP_MODE": "true",
@@ -330,14 +330,14 @@ A: v2.5.0 introduces cross-platform desktop application support. Set `"MCP_DESKT
 **Configuration File Example**: [examples/mcp-config-desktop.json](examples/mcp-config-desktop.json)
 
 **Q: How to use legacy PyQt6 GUI interface?**
-A: v2.4.0 completely removed PyQt6 GUI dependencies. To use legacy GUI, specify v2.3.0 or earlier: `uvx mcp-feedback-enhanced@2.3.0`
+A: v2.4.0 completely removed PyQt6 GUI dependencies. To use legacy GUI, specify v2.3.0 or earlier: `uvx mcp-feedback-scope@2.3.0`
 **Note**: Legacy versions don't include new features (prompt management, auto-submit, session management, desktop application, etc.).
 
 **Q: "Unexpected token 'D'" error appears**
 A: Debug output interference. Set `MCP_DEBUG=false` or remove the environment variable.
 
 **Q: Chinese character garbled text**
-A: Fixed in v2.0.3. Update to latest version: `uvx mcp-feedback-enhanced@latest`
+A: Fixed in v2.0.3. Update to latest version: `uvx mcp-feedback-scope@latest`
 
 **Q: Window disappears or positioning errors in multi-screen environment**
 A: Fixed in v2.1.1. Go to "⚙️ Settings" tab, check "Always show window at primary screen center" to resolve. Especially suitable for T-shaped screen arrangements and other complex multi-screen configurations.
@@ -389,20 +389,20 @@ If you find it useful, please:
 
 ### Contributors
 **penn201500** - [GitHub @penn201500](https://github.com/penn201500)
-- 🎯 Auto-focus input box feature ([PR #39](https://github.com/Minidoracat/mcp-feedback-enhanced/pull/39))
+- 🎯 Auto-focus input box feature ([PR #39](https://github.com/Minidoracat/mcp-feedback-scope/pull/39))
 
 **leo108** - [GitHub @leo108](https://github.com/leo108)
-- 🌐 SSH Remote Development Support (`MCP_WEB_HOST` environment variable) ([PR #113](https://github.com/Minidoracat/mcp-feedback-enhanced/pull/113))
+- 🌐 SSH Remote Development Support (`MCP_WEB_HOST` environment variable) ([PR #113](https://github.com/Minidoracat/mcp-feedback-scope/pull/113))
 
 **Alsan** - [GitHub @Alsan](https://github.com/Alsan)
-- 🍎 macOS PyO3 Compilation Configuration Support ([PR #93](https://github.com/Minidoracat/mcp-feedback-enhanced/pull/93))
+- 🍎 macOS PyO3 Compilation Configuration Support ([PR #93](https://github.com/Minidoracat/mcp-feedback-scope/pull/93))
 
 **fireinice** - [GitHub @fireinice](https://github.com/fireinice)
-- 📝 Tool Documentation Optimization (LLM instructions moved to docstring) ([PR #105](https://github.com/Minidoracat/mcp-feedback-enhanced/pull/105))
+- 📝 Tool Documentation Optimization (LLM instructions moved to docstring) ([PR #105](https://github.com/Minidoracat/mcp-feedback-scope/pull/105))
 
 ### Community Support
 - **Discord:** [https://discord.gg/Gur2V67](https://discord.gg/Gur2V67)
-- **Issues:** [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-enhanced/issues)
+- **Issues:** [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-scope/issues)
 
 ## 📄 License
 
@@ -410,7 +410,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 📈 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Minidoracat/mcp-feedback-enhanced&type=Date)](https://star-history.com/#Minidoracat/mcp-feedback-enhanced&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Minidoracat/mcp-feedback-scope&type=Date)](https://star-history.com/#Minidoracat/mcp-feedback-scope&Date)
 
 ---
 **🌟 Welcome to Star and share with more developers!**

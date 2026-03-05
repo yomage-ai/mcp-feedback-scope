@@ -110,7 +110,7 @@ graph TB
 **架構實現**：
 ```python
 # 基於 FastMCP 的服務器實現
-mcp = FastMCP("mcp-feedback-enhanced")
+mcp = FastMCP("mcp-feedback-scope")
 
 @mcp.tool()
 async def interactive_feedback(

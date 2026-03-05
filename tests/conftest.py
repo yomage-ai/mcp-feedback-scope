@@ -14,8 +14,8 @@ from typing import Any
 import pytest
 
 # 使用正確的模組導入，不手動修改 sys.path
-from mcp_feedback_enhanced.i18n import get_i18n_manager
-from mcp_feedback_enhanced.web.main import WebUIManager
+from mcp_feedback_scope.i18n import get_i18n_manager
+from mcp_feedback_scope.web.main import WebUIManager
 
 
 @pytest.fixture(scope="session")

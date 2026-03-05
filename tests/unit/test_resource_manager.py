@@ -16,7 +16,7 @@ from unittest.mock import patch
 import pytest
 
 # 移除手動路徑操作，讓 mypy 和 pytest 使用正確的模組解析
-from mcp_feedback_enhanced.utils.resource_manager import (
+from mcp_feedback_scope.utils.resource_manager import (
     ResourceManager,
     cleanup_all_resources,
     create_temp_dir,
@@ -34,7 +34,7 @@ class TestResourceManager:
         ResourceManager._instance = None
 
         # 重置全局資源管理器實例
-        import mcp_feedback_enhanced.utils.resource_manager as rm_module
+        import mcp_feedback_scope.utils.resource_manager as rm_module
 
         rm_module._resource_manager = None
 

@@ -1,5 +1,5 @@
 [project]
-name = "mcp-feedback-enhanced"
+name = "mcp-feedback-scope"
 version = "2.6.0"
 description = "Enhanced MCP server for interactive user feedback and command execution in AI-assisted development, featuring dual interface support (Web UI and Desktop Application) with intelligent environment detection and cross-platform compatibility."
 readme = "README.md"
@@ -43,13 +43,13 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Minidoracat/mcp-feedback-enhanced"
-Repository = "https://github.com/Minidoracat/mcp-feedback-enhanced"
-Issues = "https://github.com/Minidoracat/mcp-feedback-enhanced/issues"
+Homepage = "https://github.com/Minidoracat/mcp-feedback-scope"
+Repository = "https://github.com/Minidoracat/mcp-feedback-scope"
+Issues = "https://github.com/Minidoracat/mcp-feedback-scope/issues"
 
 [project.scripts]
-mcp-feedback-enhanced = "mcp_feedback_enhanced.__main__:main"
-interactive-feedback-mcp = "mcp_feedback_enhanced.__main__:main"
+mcp-feedback-scope = "mcp_feedback_scope.__main__:main"
+interactive-feedback-mcp = "mcp_feedback_scope.__main__:main"
 
 [build-system]
 requires = [
@@ -60,7 +60,7 @@ requires = [
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mcp_feedback_enhanced"]
+packages = ["src/mcp_feedback_scope"]
 
 # 桌面應用程式二進制檔案現在直接存儲在 Git 中
 # 由 build-desktop.yml 工作流程自動構建並提交
@@ -224,7 +224,7 @@ mccabe.max-complexity = 10
 ]
 
 # Web 模組的特殊規則（需要更嚴格的安全檢查）
-"src/mcp_feedback_enhanced/web/**/*.py" = [
+"src/mcp_feedback_scope/web/**/*.py" = [
     "S104",    # 允許綁定 127.0.0.1（本地開發安全）
 ]
 
@@ -243,7 +243,7 @@ line-ending = "auto"
 
 [tool.ruff.lint.isort]
 # import 排序配置
-known-first-party = ["mcp_feedback_enhanced"]
+known-first-party = ["mcp_feedback_scope"]
 force-single-line = false
 lines-after-imports = 2
 

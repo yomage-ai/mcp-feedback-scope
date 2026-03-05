@@ -108,7 +108,7 @@ jobs:
     - name: Update __init__.py version
       run: |
         NEW_VERSION="${{ steps.bump_version.outputs.new }}"
-        sed -i "s/__version__ = \".*\"/__version__ = \"$NEW_VERSION\"/" src/mcp_feedback_enhanced/__init__.py
+        sed -i "s/__version__ = \".*\"/__version__ = \"$NEW_VERSION\"/" src/mcp_feedback_scope/__init__.py
 
     - name: Extract Release Highlights
       id: extract_highlights
@@ -184,13 +184,13 @@ jobs:
         echo "## 🌐 Detailed Release Notes" >> release_body.md
         echo "" >> release_body.md
         echo "### 🇺🇸 English" >> release_body.md
-        echo "📖 **[View Complete English Release Notes](https://github.com/Minidoracat/mcp-feedback-enhanced/blob/main/RELEASE_NOTES/CHANGELOG.en.md)**" >> release_body.md
+        echo "📖 **[View Complete English Release Notes](https://github.com/Minidoracat/mcp-feedback-scope/blob/main/RELEASE_NOTES/CHANGELOG.en.md)**" >> release_body.md
         echo "" >> release_body.md
         echo "### 🇹🇼 繁體中文" >> release_body.md
-        echo "📖 **[查看完整繁體中文發布說明](https://github.com/Minidoracat/mcp-feedback-enhanced/blob/main/RELEASE_NOTES/CHANGELOG.zh-TW.md)**" >> release_body.md
+        echo "📖 **[查看完整繁體中文發布說明](https://github.com/Minidoracat/mcp-feedback-scope/blob/main/RELEASE_NOTES/CHANGELOG.zh-TW.md)**" >> release_body.md
         echo "" >> release_body.md
         echo "### 🇨🇳 简体中文" >> release_body.md
-        echo "📖 **[查看完整简体中文发布说明](https://github.com/Minidoracat/mcp-feedback-enhanced/blob/main/RELEASE_NOTES/CHANGELOG.zh-CN.md)**" >> release_body.md
+        echo "📖 **[查看完整简体中文发布说明](https://github.com/Minidoracat/mcp-feedback-scope/blob/main/RELEASE_NOTES/CHANGELOG.zh-CN.md)**" >> release_body.md
         echo "" >> release_body.md
         echo "---" >> release_body.md
         echo "" >> release_body.md
@@ -198,16 +198,16 @@ jobs:
         echo "" >> release_body.md
         echo '```bash' >> release_body.md
         echo "# Latest version / 最新版本" >> release_body.md
-        echo "uvx mcp-feedback-enhanced@latest" >> release_body.md
+        echo "uvx mcp-feedback-scope@latest" >> release_body.md
         echo "" >> release_body.md
         echo "# This specific version / 此特定版本" >> release_body.md
-        echo "uvx mcp-feedback-enhanced@${NEW_VERSION}" >> release_body.md
+        echo "uvx mcp-feedback-scope@${NEW_VERSION}" >> release_body.md
         echo '```' >> release_body.md
         echo "" >> release_body.md
         echo "## 🔗 Links" >> release_body.md
-        echo "- **Documentation**: [README.md](https://github.com/Minidoracat/mcp-feedback-enhanced/blob/main/README.md)" >> release_body.md
-        echo "- **Full Changelog**: [CHANGELOG](https://github.com/Minidoracat/mcp-feedback-enhanced/blob/main/RELEASE_NOTES/)" >> release_body.md
-        echo "- **Issues**: [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-enhanced/issues)" >> release_body.md
+        echo "- **Documentation**: [README.md](https://github.com/Minidoracat/mcp-feedback-scope/blob/main/README.md)" >> release_body.md
+        echo "- **Full Changelog**: [CHANGELOG](https://github.com/Minidoracat/mcp-feedback-scope/blob/main/RELEASE_NOTES/)" >> release_body.md
+        echo "- **Issues**: [GitHub Issues](https://github.com/Minidoracat/mcp-feedback-scope/issues)" >> release_body.md
         echo "" >> release_body.md
         echo "---" >> release_body.md
         echo "**Release automatically generated from CHANGELOG system** 🤖" >> release_body.md
@@ -322,12 +322,12 @@ jobs:
       run: |
         echo "🔍 檢查 Git 中的桌面應用程式二進制檔案..."
 
-        if [ -d "src/mcp_feedback_enhanced/desktop_release" ]; then
+        if [ -d "src/mcp_feedback_scope/desktop_release" ]; then
           echo "📁 桌面應用目錄內容："
-          ls -la src/mcp_feedback_enhanced/desktop_release/
+          ls -la src/mcp_feedback_scope/desktop_release/
 
           # 檢查是否有二進制文件
-          BINARY_COUNT=$(find src/mcp_feedback_enhanced/desktop_release -name "mcp-feedback-enhanced-desktop*" -type f | wc -l)
+          BINARY_COUNT=$(find src/mcp_feedback_scope/desktop_release -name "mcp-feedback-scope-desktop*" -type f | wc -l)
           echo "📊 找到 $BINARY_COUNT 個桌面二進制文件"
 
           if [ $BINARY_COUNT -eq 0 ]; then
@@ -355,23 +355,23 @@ jobs:
       run: |
         echo "🔍 驗證桌面應用二進制文件..."
 
-        if [ ! -d "src/mcp_feedback_enhanced/desktop_release" ]; then
+        if [ ! -d "src/mcp_feedback_scope/desktop_release" ]; then
           echo "❌ 桌面應用目錄不存在"
           exit 1
         fi
 
         # 檢查各平台文件
         PLATFORMS=(
-          "mcp-feedback-enhanced-desktop.exe:Windows"
-          "mcp-feedback-enhanced-desktop-macos-intel:macOS Intel"
-          "mcp-feedback-enhanced-desktop-macos-arm64:macOS ARM64"
-          "mcp-feedback-enhanced-desktop-linux:Linux"
+          "mcp-feedback-scope-desktop.exe:Windows"
+          "mcp-feedback-scope-desktop-macos-intel:macOS Intel"
+          "mcp-feedback-scope-desktop-macos-arm64:macOS ARM64"
+          "mcp-feedback-scope-desktop-linux:Linux"
         )
 
         VALID_COUNT=0
         for platform_info in "${PLATFORMS[@]}"; do
           IFS=':' read -r filename description <<< "$platform_info"
-          filepath="src/mcp_feedback_enhanced/desktop_release/$filename"
+          filepath="src/mcp_feedback_scope/desktop_release/$filename"
 
           if [ -f "$filepath" ]; then
             filesize=$(stat -f%z "$filepath" 2>/dev/null || stat -c%s "$filepath" 2>/dev/null || echo "0")
@@ -424,12 +424,12 @@ jobs:
         echo "🔧 準備包構建..."
 
         # 確保桌面應用目錄存在（即使是空的）
-        mkdir -p src/mcp_feedback_enhanced/desktop_release
+        mkdir -p src/mcp_feedback_scope/desktop_release
 
         # 如果沒有包含桌面應用，創建一個說明文件
-        if [ "${{ github.event.inputs.include_desktop }}" != "true" ] || [ ! -f "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop.exe" ]; then
+        if [ "${{ github.event.inputs.include_desktop }}" != "true" ] || [ ! -f "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop.exe" ]; then
           echo "🔍 桌面應用未包含，創建說明文件..."
-          cat > src/mcp_feedback_enhanced/desktop_release/README.md << 'EOF'
+          cat > src/mcp_feedback_scope/desktop_release/README.md << 'EOF'
         # 桌面應用程式
 
         此版本不包含桌面應用程式二進制檔案。
@@ -437,7 +437,7 @@ jobs:
         ## 使用方式
 
         僅支援 Web 模式
-        uvx mcp-feedback-enhanced test --web
+        uvx mcp-feedback-scope test --web
 
         如需桌面應用支援，請使用包含桌面應用的版本。
         EOF
@@ -446,12 +446,12 @@ jobs:
         fi
 
         # 確保 __init__.py 存在
-        if [ ! -f "src/mcp_feedback_enhanced/desktop_release/__init__.py" ]; then
-          echo '"""桌面應用程式二進制檔案"""' > src/mcp_feedback_enhanced/desktop_release/__init__.py
+        if [ ! -f "src/mcp_feedback_scope/desktop_release/__init__.py" ]; then
+          echo '"""桌面應用程式二進制檔案"""' > src/mcp_feedback_scope/desktop_release/__init__.py
         fi
 
         echo "📁 桌面應用目錄內容："
-        ls -la src/mcp_feedback_enhanced/desktop_release/
+        ls -la src/mcp_feedback_scope/desktop_release/
 
 
 
@@ -490,42 +490,42 @@ jobs:
       run: |
         echo "🎉 Release v${{ steps.bump_version.outputs.new }} completed successfully!"
         echo ""
-        echo "📦 Published to PyPI: https://pypi.org/project/mcp-feedback-enhanced/"
-        echo "🚀 GitHub Release: https://github.com/Minidoracat/mcp-feedback-enhanced/releases/tag/v${{ steps.bump_version.outputs.new }}"
+        echo "📦 Published to PyPI: https://pypi.org/project/mcp-feedback-scope/"
+        echo "🚀 GitHub Release: https://github.com/Minidoracat/mcp-feedback-scope/releases/tag/v${{ steps.bump_version.outputs.new }}"
         echo "📝 Release notes generated from CHANGELOG files"
         echo ""
 
         # 顯示桌面應用狀態
         if [ "${{ github.event.inputs.include_desktop }}" = "true" ]; then
           echo "🖥️ 桌面應用狀態："
-          if [ -d "src/mcp_feedback_enhanced/desktop_release" ] && [ -n "$(ls -A src/mcp_feedback_enhanced/desktop_release 2>/dev/null)" ]; then
+          if [ -d "src/mcp_feedback_scope/desktop_release" ] && [ -n "$(ls -A src/mcp_feedback_scope/desktop_release 2>/dev/null)" ]; then
             echo "  ✅ 桌面應用已包含在發佈中"
             echo "  📱 支援的平台："
 
             # 檢查各平台並顯示文件大小
-            if [ -f "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop.exe" ]; then
-              size=$(stat -f%z "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop.exe" 2>/dev/null || stat -c%s "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop.exe" 2>/dev/null || echo "unknown")
+            if [ -f "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop.exe" ]; then
+              size=$(stat -f%z "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop.exe" 2>/dev/null || stat -c%s "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop.exe" 2>/dev/null || echo "unknown")
               echo "    - ✅ Windows x64 (${size} bytes)"
             else
               echo "    - ❌ Windows x64 (缺失)"
             fi
 
-            if [ -f "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-intel" ]; then
-              size=$(stat -f%z "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-intel" 2>/dev/null || stat -c%s "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-intel" 2>/dev/null || echo "unknown")
+            if [ -f "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-intel" ]; then
+              size=$(stat -f%z "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-intel" 2>/dev/null || stat -c%s "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-intel" 2>/dev/null || echo "unknown")
               echo "    - ✅ macOS Intel (${size} bytes)"
             else
               echo "    - ❌ macOS Intel (缺失)"
             fi
 
-            if [ -f "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-arm64" ]; then
-              size=$(stat -f%z "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-arm64" 2>/dev/null || stat -c%s "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-macos-arm64" 2>/dev/null || echo "unknown")
+            if [ -f "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-arm64" ]; then
+              size=$(stat -f%z "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-arm64" 2>/dev/null || stat -c%s "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-macos-arm64" 2>/dev/null || echo "unknown")
               echo "    - ✅ macOS Apple Silicon (${size} bytes)"
             else
               echo "    - ❌ macOS Apple Silicon (缺失)"
             fi
 
-            if [ -f "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-linux" ]; then
-              size=$(stat -f%z "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-linux" 2>/dev/null || stat -c%s "src/mcp_feedback_enhanced/desktop_release/mcp-feedback-enhanced-desktop-linux" 2>/dev/null || echo "unknown")
+            if [ -f "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-linux" ]; then
+              size=$(stat -f%z "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-linux" 2>/dev/null || stat -c%s "src/mcp_feedback_scope/desktop_release/mcp-feedback-scope-desktop-linux" 2>/dev/null || echo "unknown")
               echo "    - ✅ Linux x64 (${size} bytes)"
             else
               echo "    - ❌ Linux x64 (缺失)"
@@ -543,9 +543,9 @@ jobs:
         echo "✅ Next steps:"
         echo "  - Check the release on GitHub"
         echo "  - Verify the package on PyPI"
-        echo "  - Test installation with: uvx mcp-feedback-enhanced@v${{ steps.bump_version.outputs.new }}"
+        echo "  - Test installation with: uvx mcp-feedback-scope@v${{ steps.bump_version.outputs.new }}"
         if [ "${{ github.event.inputs.include_desktop }}" = "true" ]; then
-          echo "  - Test desktop mode with: uvx mcp-feedback-enhanced@v${{ steps.bump_version.outputs.new }} test --desktop"
+          echo "  - Test desktop mode with: uvx mcp-feedback-scope@v${{ steps.bump_version.outputs.new }} test --desktop"
         fi
         echo ""
         echo "📋 Note: Make sure CHANGELOG files are updated for future releases"

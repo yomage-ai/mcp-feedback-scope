@@ -99,7 +99,7 @@ def main():
         run_cmd(f'git push origin "v{new_version}"')
 
         print(f"🎉 發布完成！版本 v{new_version} 已上線")
-        print("📦 安裝命令: uvx mcp-feedback-enhanced")
+        print("📦 安裝命令: uvx mcp-feedback-scope")
     else:
         print("⏸️  發布已取消，版本已更新但未發布")
         print("💡 您可以稍後手動發布: uv run twine upload dist/*")

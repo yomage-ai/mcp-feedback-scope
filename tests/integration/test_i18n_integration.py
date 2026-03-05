@@ -99,7 +99,7 @@ class TestI18NFileSystemIntegration:
     def test_translation_files_exist(self):
         """測試翻譯文件存在"""
         # 獲取 I18N 文件目錄
-        from mcp_feedback_enhanced.i18n import I18nManager
+        from mcp_feedback_scope.i18n import I18nManager
 
         manager = I18nManager()
         locales_dir = manager._locales_dir
@@ -127,7 +127,7 @@ class TestI18NFileSystemIntegration:
 
     def test_translation_file_encoding(self):
         """測試翻譯文件編碼"""
-        from mcp_feedback_enhanced.i18n import I18nManager
+        from mcp_feedback_scope.i18n import I18nManager
 
         manager = I18nManager()
         locales_dir = manager._locales_dir
@@ -151,7 +151,7 @@ class TestI18NEnvironmentIntegration:
 
     def test_language_detection_in_different_environments(self):
         """測試不同環境下的語言檢測"""
-        from mcp_feedback_enhanced.i18n import I18nManager
+        from mcp_feedback_scope.i18n import I18nManager
 
         # 保存原始環境變數
         original_env = {}

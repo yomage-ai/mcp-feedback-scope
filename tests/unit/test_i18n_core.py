@@ -211,7 +211,7 @@ class TestI18NEnvironmentDetection:
             os.environ["LANG"] = "zh_TW.UTF-8"
 
             # 重新創建 I18N 管理器來測試環境檢測
-            from mcp_feedback_enhanced.i18n import I18nManager
+            from mcp_feedback_scope.i18n import I18nManager
 
             test_manager = I18nManager()
 
@@ -240,7 +240,7 @@ class TestI18NEnvironmentDetection:
             # 設置不支援的語言
             os.environ["LANG"] = "fr_FR.UTF-8"  # 法語
 
-            from mcp_feedback_enhanced.i18n import I18nManager
+            from mcp_feedback_scope.i18n import I18nManager
 
             test_manager = I18nManager()
 

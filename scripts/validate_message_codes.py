@@ -21,7 +21,7 @@ def extract_backend_codes():
 
     # 讀取 MessageCodes 類別
     message_codes_file = Path(
-        "src/mcp_feedback_enhanced/web/constants/message_codes.py"
+        "src/mcp_feedback_scope/web/constants/message_codes.py"
     )
     if message_codes_file.exists():
         content = message_codes_file.read_text(encoding="utf-8")
@@ -40,7 +40,7 @@ def extract_frontend_codes():
 
     # 讀取 message-codes.js
     message_codes_js = Path(
-        "src/mcp_feedback_enhanced/web/static/js/modules/constants/message-codes.js"
+        "src/mcp_feedback_scope/web/static/js/modules/constants/message-codes.js"
     )
     if message_codes_js.exists():
         content = message_codes_js.read_text(encoding="utf-8")
@@ -50,7 +50,7 @@ def extract_frontend_codes():
         codes.update(matches)
 
     # 讀取 utils.js 中的 fallback 訊息
-    utils_js = Path("src/mcp_feedback_enhanced/web/static/js/modules/utils.js")
+    utils_js = Path("src/mcp_feedback_scope/web/static/js/modules/utils.js")
     if utils_js.exists():
         content = utils_js.read_text(encoding="utf-8")
         # 匹配 fallbackMessages 物件中的 key
@@ -70,7 +70,7 @@ def extract_translation_keys(locale="zh-TW"):
     keys = set()
 
     translation_file = Path(
-        f"src/mcp_feedback_enhanced/web/locales/{locale}/translation.json"
+        f"src/mcp_feedback_scope/web/locales/{locale}/translation.json"
     )
     if translation_file.exists():
         try:

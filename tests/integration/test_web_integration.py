@@ -159,7 +159,7 @@ class TestWebUISessionManagement:
         assert current_session.summary == "第二個會話"
 
         # 3. 測試會話狀態更新
-        from mcp_feedback_enhanced.web.models import SessionStatus
+        from mcp_feedback_scope.web.models import SessionStatus
 
         current_session.update_status(SessionStatus.FEEDBACK_SUBMITTED, "已提交回饋")
         assert current_session.status == SessionStatus.FEEDBACK_SUBMITTED
@@ -187,7 +187,7 @@ class TestWebUISessionManagement:
         assert session.settings == TestData.SAMPLE_FEEDBACK["settings"]
 
         # 驗證狀態已更新
-        from mcp_feedback_enhanced.web.models import SessionStatus
+        from mcp_feedback_scope.web.models import SessionStatus
 
         assert session.status == SessionStatus.FEEDBACK_SUBMITTED
 

@@ -67,7 +67,7 @@ Enable Debug mode in your IDE, select "Output" → "MCP Log" to see the Web UI U
 ## Important Reminders
 
 ### ⚠️ Do Not Start Manually
-**Do NOT** manually execute commands like `uvx mcp-feedback-enhanced test --web`, as this cannot integrate with the MCP system.
+**Do NOT** manually execute commands like `uvx mcp-feedback-scope test --web`, as this cannot integrate with the MCP system.
 
 ### ✅ Correct Process
 1. Wait for AI model to call MCP tool

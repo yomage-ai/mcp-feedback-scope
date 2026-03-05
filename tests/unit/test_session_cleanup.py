@@ -13,12 +13,12 @@ from unittest.mock import Mock
 import pytest
 
 # 移除手動路徑操作，讓 mypy 和 pytest 使用正確的模組解析
-from mcp_feedback_enhanced.web.models.feedback_session import (
+from mcp_feedback_scope.web.models.feedback_session import (
     CleanupReason,
     SessionStatus,
     WebFeedbackSession,
 )
-from mcp_feedback_enhanced.web.utils.session_cleanup_manager import (
+from mcp_feedback_scope.web.utils.session_cleanup_manager import (
     CleanupPolicy,
     CleanupTrigger,
     SessionCleanupManager,

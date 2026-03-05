@@ -19,12 +19,12 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.testclient import TestClient
 
-from mcp_feedback_enhanced.web.utils.compression_config import (
+from mcp_feedback_scope.web.utils.compression_config import (
     CompressionConfig,
     CompressionManager,
     get_compression_manager,
 )
-from mcp_feedback_enhanced.web.utils.compression_monitor import (
+from mcp_feedback_scope.web.utils.compression_monitor import (
     CompressionMonitor,
     get_compression_monitor,
 )

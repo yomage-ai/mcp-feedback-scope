@@ -27,7 +27,7 @@ class SimpleMCPClient:
         """啟動 MCP 服務器"""
         try:
             # 使用正確的 uv run 命令啟動 MCP 服務器
-            cmd = ["uv", "run", "python", "-m", "mcp_feedback_enhanced"]
+            cmd = ["uv", "run", "python", "-m", "mcp_feedback_scope"]
 
             self.server_process = subprocess.Popen(
                 cmd,
