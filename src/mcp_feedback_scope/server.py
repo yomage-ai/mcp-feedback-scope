@@ -575,6 +575,37 @@ async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int, s
 
 
 @mcp.tool()
+def list_sessions() -> str:
+    """List all active feedback sessions in the current MCP server process.
+
+    Use this tool before calling interactive_feedback to check existing sessions
+    and generate a unique session_title that won't conflict with others.
+
+    Returns:
+        str: JSON with session list including id, title, status, and project directory
+    """
+    try:
+        from .web import get_web_ui_manager
+        manager = get_web_ui_manager()
+        sessions = manager.get_all_active_sessions()
+        result = {
+            "total": len(sessions),
+            "sessions": [
+                {
+                    "session_id": s.session_id[:8],
+                    "title": s.title,
+                    "status": s.status.value,
+                    "project_directory": s.project_directory,
+                }
+                for s in sessions
+            ],
+        }
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e), "total": 0, "sessions": []}, ensure_ascii=False)
+
+
+@mcp.tool()
 def get_system_info() -> str:
     """
     獲取系統環境資訊
