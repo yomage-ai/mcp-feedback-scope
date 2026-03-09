@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Feedback</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <nav id="sidebar">
+      <div class="nav-brand">
+        <span class="brand-icon">◈</span>
+        <span class="brand-text">Feedback</span>
+        <span class="count-pill" id="session-count">0</span>
+      </div>
+      <ul id="session-list"></ul>
+      <div class="nav-status">
+        <span class="indicator" id="ws-status"></span>
+        <span id="ws-label">连接中</span>
+      </div>
+    </nav>
+
+    <main id="content">
+      <!-- Empty state -->
+      <div id="empty-state" class="center-box">
+        <div class="empty-glyph">◇</div>
+        <h2>等待反馈请求</h2>
+        <p>Cursor AI 调用 interactive_feedback 后<br>会话将出现在左侧</p>
+      </div>
+
+      <!-- Session detail -->
+      <div id="session-detail" class="hidden">
+        <header class="detail-head">
+          <div>
+            <h2 id="detail-title"></h2>
+            <span class="tag" id="detail-status"></span>
+          </div>
+        </header>
+
+        <!-- Scrollable messages area -->
+        <div id="messages-scroll">
+          <!-- History -->
+          <section id="history-section">
+            <div id="history-list"></div>
+          </section>
+
+          <!-- Current summary -->
+          <section class="card" id="summary-section">
+            <div class="card-label">AI 工作汇报</div>
+            <div id="summary-content" class="prose"></div>
+            <div id="summary-images" class="gallery hidden"></div>
+          </section>
+
+          <!-- Responded -->
+          <section id="responded-section" class="hidden">
+            <div class="card ok-card">
+              <div class="card-label">已提交</div>
+              <div id="responded-content"></div>
+              <div id="responded-images" class="gallery"></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Response input — pinned to bottom -->
+        <section id="response-section" class="hidden">
+          <div class="card input-card">
+            <textarea id="response-input" placeholder="输入反馈 … Ctrl+Enter 发送" rows="3"></textarea>
+            <div id="image-preview" class="thumb-row hidden"></div>
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <label class="icon-btn" title="上传图片">
+                  <input type="file" id="file-input" accept="image/*" multiple hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                </label>
+                <span class="hint">Ctrl+V 粘贴图片</span>
+              </div>
+              <div class="toolbar-right">
+                <button id="btn-continue" class="btn ghost">继续</button>
+                <button id="btn-done" class="btn ghost muted">结束</button>
+                <button id="btn-submit" class="btn primary">发送</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Drop overlay -->
+  <div id="drop-overlay" class="drop hidden">
+    <span>释放以添加图片</span>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
