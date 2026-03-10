@@ -4,15 +4,13 @@
   var ws, currentSid, sessions = [], requests = [], pendingImgs = [];
 
   var $ = function (s) { return document.querySelector(s); };
-  var $list      = $("#session-list"),
-      $count     = $("#session-count"),
+
+  var $tabs      = $("#session-tabs"),
       $empty     = $("#empty-state"),
-      $detail    = $("#session-detail"),
-      $title     = $("#detail-title"),
-      $status    = $("#detail-status"),
+      $main      = $("#main-content"),
       $summary   = $("#summary-content"),
       $sumImgs   = $("#summary-images"),
-      $respSec   = $("#response-section"),
+      $sumSec    = $("#summary-section"),
       $doneSec   = $("#responded-section"),
       $doneText  = $("#responded-content"),
       $doneImgs  = $("#responded-images"),
@@ -21,37 +19,69 @@
       $file      = $("#file-input"),
       $send      = $("#btn-submit"),
       $cont      = $("#btn-continue"),
+      $last      = $("#btn-last"),
       $done      = $("#btn-done"),
       $history   = $("#history-list"),
       $wsInd     = $("#ws-status"),
       $wsLbl     = $("#ws-label"),
-      $drop      = $("#drop-overlay");
+      $wsBadge   = $("#ws-badge"),
+      $drop      = $("#drop-overlay"),
+      $form      = $("#feedback-form"),
+      $upload    = $("#upload-area"),
+      $chatScroll = $("#chat-scroll");
+
+  var views = {
+    workspace: $("#workspace-view"),
+    settings:  $("#settings-view"),
+    about:     $("#about-view")
+  };
 
   // ── API ──
   function api(url, o) {
     return fetch(url, Object.assign({ headers: { "Content-Type": "application/json" } }, o))
       .then(function (r) { return r.json(); });
   }
+
   function load() {
-    return api("/api/sessions").then(function (d) { sessions = d; renderList(); });
+    return api("/api/sessions").then(function (d) { sessions = d; renderSessionTabs(); });
   }
+
   function loadDetail(sid) {
     return api("/api/sessions/" + sid + "/feedback").then(function (d) { requests = d; renderDetail(); });
   }
 
-  // ── Render list ──
-  function renderList() {
-    $count.textContent = sessions.length;
-    $list.innerHTML = "";
-    if (!sessions.length) { $empty.classList.remove("hidden"); $detail.classList.add("hidden"); return; }
+  // ── View switching ──
+  function switchView(name) {
+    Object.keys(views).forEach(function (k) {
+      if (views[k]) views[k].classList.toggle("active", k === name);
+    });
+    document.querySelectorAll(".nav-tab").forEach(function (tab) {
+      tab.classList.toggle("active", tab.dataset.tab === name);
+    });
+  }
+
+  document.querySelectorAll(".nav-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      switchView(tab.dataset.tab);
+    });
+  });
+
+  // ── Session tabs ──
+  function renderSessionTabs() {
+    $tabs.innerHTML = "";
+    if (!sessions.length) {
+      $empty.classList.remove("hidden");
+      $main.classList.add("hidden");
+      return;
+    }
+
     sessions.forEach(function (s) {
-      var li = document.createElement("li");
-      if (s.id === currentSid) li.classList.add("active");
-      li.innerHTML = '<div class="s-title">' + esc(s.title || "Session " + s.id) + '</div>' +
-        '<div class="s-meta"><span class="s-dot ' + s.status + '"></span>' +
-        label(s.status) + " · " + ago(s.last_activity) + '</div>';
-      li.onclick = function () { pick(s.id); };
-      $list.appendChild(li);
+      var btn = document.createElement("button");
+      btn.className = "session-tab" + (s.id === currentSid ? " active" : "");
+      btn.innerHTML = '<span class="tab-dot ' + s.status + '"></span>' +
+        '<span class="tab-title">' + esc(s.title || "Session " + s.id) + '</span>';
+      btn.onclick = function () { pick(s.id); };
+      $tabs.appendChild(btn);
     });
   }
 
@@ -59,43 +89,54 @@
   function renderDetail() {
     var s = sessions.find(function (x) { return x.id === currentSid; });
     if (!s) return;
+
     $empty.classList.add("hidden");
-    $detail.classList.remove("hidden");
-    $title.textContent = s.title || "Session " + s.id;
-    $status.textContent = label(s.status);
-    $status.className = "tag " + s.status;
+    $main.classList.remove("hidden");
 
     var pending = requests.find(function (r) { return r.status === "pending"; });
     var done = requests.filter(function (r) { return r.status !== "pending"; });
 
-    if (pending && s.status !== "disconnected") {
+    renderHistory(done);
+
+    if (pending) {
+      $sumSec.classList.remove("hidden");
       showSummary(pending.summary, pending.summary_images);
-      $respSec.classList.remove("hidden");
+    } else {
+      $sumSec.classList.add("hidden");
+    }
+
+    if (pending && s.status !== "disconnected") {
+      enableForm(true);
       $doneSec.classList.add("hidden");
       $input.value = "";
       clearImgs();
       $input.focus();
     } else if (s.status === "disconnected" && pending) {
-      showSummary(pending.summary, pending.summary_images);
-      $respSec.classList.add("hidden");
+      enableForm(false);
       $doneSec.classList.remove("hidden");
       $doneText.textContent = "Cursor 已断开连接，此请求已取消";
       fillGallery($doneImgs, []);
     } else if (done.length) {
       var last = done[done.length - 1];
-      showSummary(last.summary, last.summary_images);
-      $respSec.classList.add("hidden");
+      enableForm(false);
       $doneSec.classList.remove("hidden");
       $doneText.innerHTML = md(last.response || "");
       fillGallery($doneImgs, last.response_images);
     } else {
-      $summary.innerHTML = '<span class="text-dim">暂无请求</span>';
-      $sumImgs.innerHTML = ""; $sumImgs.classList.add("hidden");
-      $respSec.classList.add("hidden");
+      enableForm(false);
       $doneSec.classList.add("hidden");
     }
-    renderHistory(done);
+
     scrollToBottom();
+  }
+
+  function enableForm(on) {
+    $form.classList.toggle("feedback-disabled", !on);
+    $input.disabled = !on;
+    $send.disabled = !on;
+    $cont.disabled = !on;
+    $done.disabled = !on;
+    if ($last) $last.disabled = !on;
   }
 
   function showSummary(text, imgs) {
@@ -129,7 +170,7 @@
 
       var aiMsg = document.createElement("div"); aiMsg.className = "chat-msg ai";
       var aiLabel = document.createElement("div"); aiLabel.className = "chat-role";
-      aiLabel.innerHTML = '<span class="role-dot ai"></span> AI';
+      aiLabel.innerHTML = '<span class="role-icon ai">✦</span> AI';
       var aiBody = document.createElement("div"); aiBody.className = "chat-body prose";
       aiBody.innerHTML = md(r.summary || "");
       initCodeBlocks(aiBody);
@@ -144,7 +185,7 @@
 
       var userMsg = document.createElement("div"); userMsg.className = "chat-msg user";
       var userLabel = document.createElement("div"); userLabel.className = "chat-role";
-      userLabel.innerHTML = '<span class="role-dot user"></span> User';
+      userLabel.innerHTML = '<span class="role-icon user">◉</span> 你';
       var userBody = document.createElement("div"); userBody.className = "chat-body";
       var statusText = r.status === "cancelled" ? "已取消" : (r.response || "\u2014");
       userBody.textContent = statusText;
@@ -168,8 +209,9 @@
   }
 
   function scrollToBottom() {
-    var el = document.getElementById("messages-scroll");
-    if (el) setTimeout(function () { el.scrollTop = el.scrollHeight; }, 50);
+    if ($chatScroll) {
+      setTimeout(function () { $chatScroll.scrollTop = $chatScroll.scrollHeight; }, 60);
+    }
   }
 
   // ── Code block enhancements ──
@@ -201,7 +243,7 @@
       copyBtn.onclick = function () {
         var text = code ? code.textContent : pre.textContent;
         navigator.clipboard.writeText(text).then(function () {
-          copyBtn.textContent = "已复制";
+          copyBtn.textContent = "已复制 ✓";
           setTimeout(function () { copyBtn.textContent = "复制"; }, 1500);
         });
       };
@@ -229,7 +271,7 @@
   }
 
   // ── Actions ──
-  function pick(sid) { currentSid = sid; renderList(); loadDetail(sid); }
+  function pick(sid) { currentSid = sid; renderSessionTabs(); loadDetail(sid); }
 
   function submit(text) {
     var p = requests.find(function (r) { return r.status === "pending"; });
@@ -284,18 +326,55 @@
   }
 
   // ── Events ──
-  $send.onclick = function () { var t = $input.value.trim(); if (t || pendingImgs.length) submit(t); };
-  $cont.onclick = function () { submit("继续"); };
-  $done.onclick = function () { submit("结束"); };
-  $input.onkeydown = function (e) {
-    if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); var t = $input.value.trim(); if (t || pendingImgs.length) submit(t); }
+  $send.onclick = function () {
+    var t = $input.value.trim();
+    if (t || pendingImgs.length) submit(t);
   };
+
+  $cont.onclick = function () { submit("继续"); };
+
+  $done.onclick = function () {
+    var done = requests.filter(function (r) { return r.status !== "pending"; });
+    if (done.length) {
+      var lastResp = done[done.length - 1].response || "";
+      if (lastResp) {
+        navigator.clipboard.writeText(lastResp).then(function () {
+          toast("已复制到剪贴板");
+        });
+        return;
+      }
+    }
+    submit("结束");
+  };
+
+  if ($last) {
+    $last.onclick = function () { submit("结束"); };
+  }
+
+  $input.onkeydown = function (e) {
+    if (e.ctrlKey && e.key === "Enter") {
+      e.preventDefault();
+      var t = $input.value.trim();
+      if (t || pendingImgs.length) submit(t);
+    }
+  };
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "i") {
+      e.preventDefault();
+      $input.focus();
+    }
+  });
+
   $file.onchange = function () { Array.from($file.files).forEach(addFile); $file.value = ""; };
+
+  $upload.onclick = function () { $file.click(); };
 
   document.addEventListener("paste", handlePaste);
 
   $preview.onclick = function (e) {
-    var b = e.target.closest(".x"); if (b) { pendingImgs.splice(+b.dataset.i, 1); renderPreview(); }
+    var b = e.target.closest(".x");
+    if (b) { pendingImgs.splice(+b.dataset.i, 1); renderPreview(); }
   };
 
   var dc = 0;
@@ -313,14 +392,26 @@
   function connect() {
     var p = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(p + "//" + location.host + "/ws");
-    ws.onopen = function () { $wsInd.classList.add("connected"); $wsLbl.textContent = "已连接"; };
-    ws.onclose = function () { $wsInd.classList.remove("connected"); $wsLbl.textContent = "已断开"; setTimeout(connect, 2000); };
+    ws.onopen = function () {
+      $wsInd.classList.add("connected");
+      $wsBadge.classList.add("connected");
+      $wsLbl.textContent = "已连接";
+    };
+    ws.onclose = function () {
+      $wsInd.classList.remove("connected");
+      $wsBadge.classList.remove("connected");
+      $wsLbl.textContent = "已断开";
+      setTimeout(connect, 2000);
+    };
     ws.onmessage = function (e) {
       try {
         var m = JSON.parse(e.data);
         if (m.type === "update") {
           refresh().then(function () {
-            if (!currentSid) { var w = sessions.find(function (s) { return s.status === "waiting"; }); if (w) pick(w.id); }
+            if (!currentSid) {
+              var w = sessions.find(function (s) { return s.status === "waiting"; });
+              if (w) pick(w.id);
+            }
           });
           toast("收到新的更新");
         }
@@ -351,7 +442,6 @@
     if (!text) return "";
     var tok = [], out = text;
 
-    // Extract fenced code blocks FIRST
     out = out.replace(/```(\w*)\n([\s\S]*?)```/g, function (_, lang, code) {
       var i = tok.length;
       var escapedCode = esc(code.replace(/\n$/, ""));
@@ -360,21 +450,18 @@
       return "\n%%T" + i + "%%\n";
     });
 
-    // Extract inline code
     out = out.replace(/`([^`]+)`/g, function (_, code) {
       var i = tok.length;
       tok.push('<code>' + esc(code) + '</code>');
       return "%%T" + i + "%%";
     });
 
-    // Extract images
     out = out.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function (_, a, u) {
       var i = tok.length;
       tok.push('<img class="md-image" src="' + escA(u) + '" alt="' + escA(a) + '" onclick="this.dispatchEvent(new CustomEvent(\'img-zoom\',{bubbles:true,detail:this.src}))" onerror="this.classList.add(\'md-image-broken\')">');
       return "%%T" + i + "%%";
     });
 
-    // Extract links
     out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function (_, l, u) {
       var i = tok.length;
       tok.push('<a href="' + escA(u) + '" target="_blank">' + esc(l) + '</a>');
@@ -384,25 +471,20 @@
     var h = esc(out);
     h = h.replace(/%%T(\d+)%%/g, function (_, i) { return tok[+i]; });
 
-    // Headings
     h = h.replace(/^### (.+)$/gm, '<h4>$1</h4>');
     h = h.replace(/^## (.+)$/gm, '<h3>$1</h3>');
     h = h.replace(/^# (.+)$/gm, '<h2>$1</h2>');
 
-    // Bold & italic
     h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     h = h.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
-    // Lists
     h = h.replace(/^\* (.+)$/gm, "<li>$1</li>");
     h = h.replace(/^- (.+)$/gm, "<li>$1</li>");
     h = h.replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>");
     h = h.replace(/((?:<li>[\s\S]*?<\/li>\s*)+)/g, "<ul>$1</ul>");
 
-    // Horizontal rule
     h = h.replace(/^---$/gm, '<hr>');
 
-    // Line breaks (but not around block elements)
     h = h.replace(/\n/g, "<br>");
     h = h.replace(/<br>(<\/?(?:pre|ul|ol|li|h[1-4]|hr|div))/g, "$1");
     h = h.replace(/(<\/(?:pre|ul|ol|li|h[1-4]|hr|div)>)<br>/g, "$1");
@@ -410,15 +492,19 @@
     return h;
   }
 
-  function trunc(s, n) { return s && s.length > n ? s.slice(0, n) + "\u2026" : s || ""; }
   function label(st) { return { active: "活跃", waiting: "等待反馈", closed: "已关闭", disconnected: "已断开" }[st] || st; }
+
   function ago(iso) {
     if (!iso) return "";
     var d = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (d < 60) return "刚刚"; if (d < 3600) return ~~(d / 60) + "分钟前";
-    if (d < 86400) return ~~(d / 3600) + "小时前"; return ~~(d / 86400) + "天前";
+    if (d < 60) return "刚刚";
+    if (d < 3600) return ~~(d / 60) + "分钟前";
+    if (d < 86400) return ~~(d / 3600) + "小时前";
+    return ~~(d / 86400) + "天前";
   }
+
   function fmtTime(iso) { return iso ? new Date(iso).toLocaleString("zh-CN") : ""; }
+
   function toast(msg) {
     var el = document.createElement("div"); el.className = "toast"; el.textContent = msg;
     document.getElementById("toast-container").appendChild(el);

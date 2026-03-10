@@ -4,95 +4,200 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP Feedback</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div id="app">
-    <nav id="sidebar">
-      <div class="nav-brand">
-        <span class="brand-icon">◈</span>
-        <span class="brand-text">Feedback</span>
-        <span class="count-pill" id="session-count">0</span>
+  <!-- Top Navigation -->
+  <header id="topnav">
+    <div class="nav-brand">
+      <div class="brand-icon-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
       </div>
-      <ul id="session-list"></ul>
-      <div class="nav-status">
-        <span class="indicator" id="ws-status"></span>
+      <span class="brand-text">MCP Feedback</span>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="workspace">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        工作区
+      </button>
+      <button class="nav-tab" data-tab="settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置
+      </button>
+      <button class="nav-tab" data-tab="about">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        关于
+      </button>
+    </nav>
+    <div class="nav-right">
+      <div class="status-badge" id="ws-badge">
+        <span class="status-dot" id="ws-status"></span>
         <span id="ws-label">连接中</span>
       </div>
-    </nav>
+    </div>
+  </header>
 
-    <main id="content">
-      <!-- Empty state -->
-      <div id="empty-state" class="center-box">
-        <div class="empty-glyph">◇</div>
-        <h2>等待反馈请求</h2>
-        <p>Cursor AI 调用 interactive_feedback 后<br>会话将出现在左侧</p>
+  <!-- Session Tab Bar -->
+  <div id="session-bar">
+    <div id="session-tabs"></div>
+    <div class="session-bar-fade"></div>
+  </div>
+
+  <!-- Workspace View -->
+  <div id="workspace-view" class="view active">
+    <div id="empty-state" class="empty-container">
+      <div class="empty-icon">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
       </div>
+      <h2>等待反馈请求</h2>
+      <p>Cursor AI 调用 interactive_feedback 后<br>会话将出现在上方标签栏</p>
+    </div>
 
-      <!-- Session detail -->
-      <div id="session-detail" class="hidden">
-        <header class="detail-head">
-          <div>
-            <h2 id="detail-title"></h2>
-            <span class="tag" id="detail-status"></span>
+    <div id="main-content" class="hidden">
+      <!-- Left: Chat History -->
+      <div id="chat-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <h3>AI 对话历史</h3>
           </div>
-        </header>
-
-        <!-- Scrollable messages area -->
-        <div id="messages-scroll">
-          <!-- History -->
-          <section id="history-section">
-            <div id="history-list"></div>
-          </section>
-
-          <!-- Current summary -->
-          <section class="card" id="summary-section">
-            <div class="card-label">AI 工作汇报</div>
-            <div id="summary-content" class="prose"></div>
-            <div id="summary-images" class="gallery hidden"></div>
-          </section>
-
-          <!-- Responded -->
-          <section id="responded-section" class="hidden">
-            <div class="card ok-card">
-              <div class="card-label">已提交</div>
-              <div id="responded-content"></div>
-              <div id="responded-images" class="gallery"></div>
-            </div>
-          </section>
         </div>
+        <div id="chat-scroll">
+          <div id="history-list"></div>
+          <div id="summary-section" class="hidden">
+            <div class="chat-msg ai">
+              <div class="chat-role"><span class="role-icon ai">✦</span> AI</div>
+              <div class="chat-body prose" id="summary-content"></div>
+              <div id="summary-images" class="chat-imgs hidden"></div>
+            </div>
+          </div>
+          <div id="responded-section" class="hidden">
+            <div class="chat-msg user">
+              <div class="chat-role"><span class="role-icon user">◉</span> 你</div>
+              <div class="chat-body" id="responded-content"></div>
+              <div id="responded-images" class="chat-imgs"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- Response input — pinned to bottom -->
-        <section id="response-section" class="hidden">
-          <div class="card input-card">
-            <textarea id="response-input" placeholder="输入反馈 … Ctrl+Enter 发送" rows="3"></textarea>
-            <div id="image-preview" class="thumb-row hidden"></div>
-            <div class="toolbar">
-              <div class="toolbar-left">
-                <label class="icon-btn" title="上传图片">
-                  <input type="file" id="file-input" accept="image/*" multiple hidden>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                </label>
-                <span class="hint">Ctrl+V 粘贴图片</span>
-              </div>
-              <div class="toolbar-right">
-                <button id="btn-continue" class="btn ghost">继续</button>
-                <button id="btn-done" class="btn ghost muted">结束</button>
-                <button id="btn-submit" class="btn primary">发送</button>
+      <!-- Right: Feedback Form -->
+      <div id="feedback-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <h3>提供反馈</h3>
+          </div>
+          <button id="btn-submit" class="btn-submit" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            提交反馈
+          </button>
+        </div>
+        <div id="feedback-form" class="feedback-disabled">
+          <div class="form-group">
+            <label class="form-label">文字反馈</label>
+            <div class="textarea-wrap">
+              <textarea id="response-input" placeholder="请在这里输入您的反馈..." rows="4" disabled></textarea>
+            </div>
+            <div class="input-hints">
+              <span class="hint-bulb">💡</span>
+              <div class="hint-lines">
+                <span class="hint-title">小提示：</span>
+                <span>• 按 Ctrl+Enter/Cmd+Enter 可快速提交</span>
+                <span>• 按 Ctrl+I/Cmd+I 可聚焦输入框</span>
+                <span>• 按 Ctrl+V/Cmd+V 可直接粘贴剪贴板图片</span>
               </div>
             </div>
           </div>
-        </section>
+
+          <div class="quick-actions">
+            <button id="btn-continue" class="action-chip" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              常用提示
+            </button>
+            <button id="btn-last" class="action-chip" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              上次提示
+            </button>
+            <button id="btn-done" class="action-chip" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              复制用户内容
+            </button>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label">图片附件</label>
+              <span class="form-optional">可选</span>
+            </div>
+            <div class="upload-area" id="upload-area">
+              <input type="file" id="file-input" accept="image/*" multiple hidden>
+              <div class="upload-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <p class="upload-text">点击选择图片或拖放图片到此处</p>
+              <p class="upload-hint">支持 PNG, JPG, GIF, WebP 等格式</p>
+            </div>
+            <div id="image-preview" class="thumb-row hidden"></div>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   </div>
 
-  <!-- Drop overlay -->
-  <div id="drop-overlay" class="drop hidden">
-    <span>释放以添加图片</span>
+  <!-- Settings View -->
+  <div id="settings-view" class="view">
+    <div class="placeholder-view">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <h2>设置</h2>
+      <p>设置功能即将推出</p>
+    </div>
   </div>
 
-  <!-- Toasts -->
+  <!-- About View -->
+  <div id="about-view" class="view">
+    <div class="placeholder-view">
+      <div class="about-brand">
+        <div class="about-icon-wrap">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+      </div>
+      <h2>MCP Feedback Scope</h2>
+      <p>交互式反馈收集工具</p>
+      <div class="about-meta">构建于 {{ build_time }}</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="footer-left">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      <span>详细统计信息</span>
+    </div>
+    <div class="footer-right">
+      <span>©</span>
+      <span id="build-time">{{ build_time }}</span>
+    </div>
+  </footer>
+
+  <!-- Drop Overlay -->
+  <div id="drop-overlay" class="drop-overlay hidden">
+    <div class="drop-content">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>释放以添加图片</span>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
   <div id="toast-container"></div>
 
   <script src="/static/app.js"></script>

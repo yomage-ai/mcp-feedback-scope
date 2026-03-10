@@ -7,6 +7,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -25,6 +26,10 @@ logger = logging.getLogger("mcp-feedback-scope.web")
 BASE_DIR = Path(__file__).parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
+
+BUILD_TIME = datetime.fromtimestamp(
+    Path(__file__).stat().st_mtime, tz=timezone.utc
+).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 # ── WebSocket connection manager ──
@@ -207,7 +212,10 @@ async def websocket_endpoint(ws: WebSocket) -> None:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "build_time": BUILD_TIME,
+    })
 
 
 # ── Entry point ──
