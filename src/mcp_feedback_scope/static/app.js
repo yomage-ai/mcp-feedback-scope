@@ -28,12 +28,27 @@
       $drop      = $("#drop-overlay"),
       $form      = $("#feedback-form"),
       $upload    = $("#upload-area"),
-      $chatScroll = $("#chat-scroll");
+      $chatScroll = $("#chat-scroll"),
+      $endBtn    = $("#btn-end-session"),
+      $histList  = $("#history-session-list"),
+      $histChat  = $("#history-chat-list"),
+      $histTitle = $("#history-detail-title"),
+      $histScroll = $("#history-chat-scroll"),
+      $clearHist = $("#btn-clear-history"),
+      $sessionBar = $("#session-bar"),
+      $infoBar   = $("#session-info-bar"),
+      $aiTitle   = $("#session-ai-title"),
+      $noteText  = $("#session-note-text"),
+      $noteInput = $("#session-note-input");
+
+  var ARCHIVE_KEY = "mcp_feedback_archives";
+  var currentHistIdx = -1;
 
   var views = {
     workspace: $("#workspace-view"),
     settings:  $("#settings-view"),
-    about:     $("#about-view")
+    about:     $("#about-view"),
+    history:   $("#history-view")
   };
 
   // ── API ──
@@ -58,6 +73,12 @@
     document.querySelectorAll(".nav-tab").forEach(function (tab) {
       tab.classList.toggle("active", tab.dataset.tab === name);
     });
+    if ($sessionBar) {
+      $sessionBar.classList.toggle("hidden", name !== "workspace");
+    }
+    if (name === "history") {
+      renderHistoryView();
+    }
   }
 
   document.querySelectorAll(".nav-tab").forEach(function (tab) {
@@ -69,17 +90,20 @@
   // ── Session tabs ──
   function renderSessionTabs() {
     $tabs.innerHTML = "";
-    if (!sessions.length) {
+    var visible = sessions.filter(function (s) { return s.status !== "closed"; });
+    if (!visible.length) {
       $empty.classList.remove("hidden");
       $main.classList.add("hidden");
       return;
     }
 
-    sessions.forEach(function (s) {
+    visible.forEach(function (s) {
       var btn = document.createElement("button");
       btn.className = "session-tab" + (s.id === currentSid ? " active" : "");
+      var displayTitle = s.title || "Session " + s.id;
+      if (s.note) displayTitle += " · " + s.note;
       btn.innerHTML = '<span class="tab-dot ' + s.status + '"></span>' +
-        '<span class="tab-title">' + esc(s.title || "Session " + s.id) + '</span>';
+        '<span class="tab-title">' + esc(displayTitle) + '</span>';
       btn.onclick = function () { pick(s.id); };
       $tabs.appendChild(btn);
     });
@@ -93,10 +117,23 @@
     $empty.classList.add("hidden");
     $main.classList.remove("hidden");
 
+    if ($endBtn) {
+      $endBtn.disabled = s.status === "closed";
+    }
+
+    if ($infoBar) {
+      $infoBar.classList.remove("hidden");
+      if ($aiTitle) $aiTitle.textContent = s.title || "Session " + s.id;
+      if ($noteText) {
+        $noteText.textContent = s.note || "添加备注...";
+        $noteText.classList.toggle("note-placeholder", !s.note);
+      }
+    }
+
     var pending = requests.find(function (r) { return r.status === "pending"; });
     var done = requests.filter(function (r) { return r.status !== "pending"; });
 
-    renderHistory(done);
+    renderHistory(done, !!pending);
 
     if (pending) {
       $sumSec.classList.remove("hidden");
@@ -108,20 +145,12 @@
     if (pending && s.status !== "disconnected") {
       enableForm(true);
       $doneSec.classList.add("hidden");
-      $input.value = "";
-      clearImgs();
       $input.focus();
     } else if (s.status === "disconnected" && pending) {
       enableForm(false);
       $doneSec.classList.remove("hidden");
       $doneText.textContent = "Cursor 已断开连接，此请求已取消";
       fillGallery($doneImgs, []);
-    } else if (done.length) {
-      var last = done[done.length - 1];
-      enableForm(false);
-      $doneSec.classList.remove("hidden");
-      $doneText.innerHTML = md(last.response || "");
-      fillGallery($doneImgs, last.response_images);
     } else {
       enableForm(false);
       $doneSec.classList.add("hidden");
@@ -159,10 +188,12 @@
     imgs.forEach(function (src) { el.appendChild(mkImg(src, "", true)); });
   }
 
-  function renderHistory(items) {
+  function renderHistory(items, hasPending) {
     $history.innerHTML = "";
     if (!items.length) {
-      $history.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+      if (!hasPending) {
+        $history.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+      }
       return;
     }
     items.forEach(function (r) {
@@ -270,6 +301,202 @@
     });
   }
 
+  // ── LocalStorage archive helpers ──
+  function loadArchives() {
+    try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || "[]"); }
+    catch (e) { return []; }
+  }
+
+  function saveArchive(data) {
+    var archives = loadArchives();
+    archives.unshift({
+      session: data.session,
+      requests: data.requests,
+      archived_at: new Date().toISOString()
+    });
+    try {
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archives));
+    } catch (e) {
+      var slim = archives.map(function (a) {
+        return {
+          session: a.session,
+          requests: a.requests.map(function (r) {
+            var c = Object.assign({}, r);
+            c.summary_images = [];
+            c.response_images = [];
+            return c;
+          }),
+          archived_at: a.archived_at
+        };
+      });
+      try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(slim)); } catch (e2) {}
+    }
+  }
+
+  function removeArchive(idx) {
+    var archives = loadArchives();
+    archives.splice(idx, 1);
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archives));
+  }
+
+  function clearArchives() {
+    localStorage.removeItem(ARCHIVE_KEY);
+  }
+
+  // ── End session ──
+  function endSession() {
+    var sid = currentSid;
+    if (!sid) return;
+    if ($endBtn) $endBtn.disabled = true;
+
+    var pending = requests.find(function (r) { return r.status === "pending"; });
+    var chain = Promise.resolve();
+
+    if (pending) {
+      chain = chain.then(function () {
+        return api("/api/feedback/" + pending.id + "/respond", {
+          method: "POST",
+          body: JSON.stringify({ response: "结束", images: [] })
+        });
+      });
+    }
+
+    chain.then(function () {
+      return fetch("/api/sessions/" + sid + "/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      }).then(function (r) { return r.json(); });
+    }).then(function (data) {
+      if (!data || data.error) {
+        toast("关闭失败: " + (data && data.error || "未知错误"));
+        if ($endBtn) $endBtn.disabled = false;
+        return;
+      }
+      saveArchive(data);
+      currentSid = null;
+      return refresh().then(function () {
+        var visible = sessions.filter(function (s) { return s.status !== "closed"; });
+        if (visible.length) {
+          var w = visible.find(function (s) { return s.status === "waiting"; });
+          pick(w ? w.id : visible[0].id);
+        }
+        toast("会话已结束并归档");
+      });
+    }).catch(function (err) {
+      if ($endBtn) $endBtn.disabled = false;
+      toast("操作失败: " + (err.message || err));
+    });
+  }
+
+  // ── History view rendering ──
+  function renderHistoryView() {
+    var archives = loadArchives();
+    if ($histList) $histList.innerHTML = "";
+    if ($histChat) $histChat.innerHTML = "";
+
+    if (!archives.length) {
+      if ($histList) $histList.innerHTML = '<div class="history-empty">暂无历史会话</div>';
+      if ($histTitle) $histTitle.textContent = "选择一个会话查看";
+      return;
+    }
+
+    archives.forEach(function (a, i) {
+      var item = document.createElement("div");
+      item.className = "history-item" + (i === currentHistIdx ? " active" : "");
+
+      var title = document.createElement("div");
+      title.className = "history-item-title";
+      title.textContent = a.session.title || "Session " + a.session.id;
+
+      var meta = document.createElement("div");
+      meta.className = "history-item-meta";
+      meta.textContent = fmtTime(a.archived_at) + " · " + a.requests.length + " 条记录";
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "history-item-del";
+      delBtn.innerHTML = "&times;";
+      delBtn.title = "删除";
+      delBtn.onclick = function (e) {
+        e.stopPropagation();
+        removeArchive(i);
+        if (currentHistIdx === i) currentHistIdx = -1;
+        else if (currentHistIdx > i) currentHistIdx--;
+        renderHistoryView();
+      };
+
+      item.appendChild(title);
+      item.appendChild(meta);
+      item.appendChild(delBtn);
+
+      item.onclick = function () {
+        currentHistIdx = i;
+        renderHistoryView();
+      };
+
+      if ($histList) $histList.appendChild(item);
+    });
+
+    if (currentHistIdx >= 0 && currentHistIdx < archives.length) {
+      renderHistoryDetail(archives[currentHistIdx]);
+    } else {
+      if ($histTitle) $histTitle.textContent = "选择一个会话查看";
+    }
+  }
+
+  function renderHistoryDetail(archive) {
+    if ($histTitle) $histTitle.textContent = archive.session.title || "Session " + archive.session.id;
+    if (!$histChat) return;
+    $histChat.innerHTML = "";
+
+    if (!archive.requests.length) {
+      $histChat.innerHTML = '<div class="history-empty">此会话没有对话记录</div>';
+      return;
+    }
+
+    archive.requests.forEach(function (r) {
+      var d = document.createElement("div"); d.className = "chat-pair";
+
+      var aiMsg = document.createElement("div"); aiMsg.className = "chat-msg ai";
+      var aiLabel = document.createElement("div"); aiLabel.className = "chat-role";
+      aiLabel.innerHTML = '<span class="role-icon ai">✦</span> AI';
+      var aiBody = document.createElement("div"); aiBody.className = "chat-body prose";
+      aiBody.innerHTML = md(r.summary || "");
+      initCodeBlocks(aiBody);
+      aiMsg.appendChild(aiLabel);
+      aiMsg.appendChild(aiBody);
+
+      if (r.summary_images && r.summary_images.length) {
+        var aiImgs = document.createElement("div"); aiImgs.className = "chat-imgs";
+        r.summary_images.forEach(function (src) { aiImgs.appendChild(mkImg(src, "", true)); });
+        aiMsg.appendChild(aiImgs);
+      }
+
+      var userMsg = document.createElement("div"); userMsg.className = "chat-msg user";
+      var userLabel = document.createElement("div"); userLabel.className = "chat-role";
+      userLabel.innerHTML = '<span class="role-icon user">◉</span> 你';
+      var userBody = document.createElement("div"); userBody.className = "chat-body";
+      var statusText = r.status === "cancelled" ? "已取消" : (r.response || "\u2014");
+      userBody.textContent = statusText;
+      userMsg.appendChild(userLabel);
+      userMsg.appendChild(userBody);
+
+      if (r.response_images && r.response_images.length) {
+        var userImgs = document.createElement("div"); userImgs.className = "chat-imgs";
+        r.response_images.forEach(function (src) { userImgs.appendChild(mkImg(src, "", true)); });
+        userMsg.appendChild(userImgs);
+      }
+
+      var time = document.createElement("div"); time.className = "chat-time";
+      time.textContent = fmtTime(r.responded_at || r.created_at);
+
+      d.appendChild(aiMsg);
+      d.appendChild(userMsg);
+      d.appendChild(time);
+      $histChat.appendChild(d);
+    });
+  }
+
   // ── Actions ──
   function pick(sid) { currentSid = sid; renderSessionTabs(); loadDetail(sid); }
 
@@ -282,6 +509,7 @@
       body: JSON.stringify({ response: text, images: pendingImgs.slice() })
     }).then(function () {
       $send.disabled = $cont.disabled = $done.disabled = false;
+      $input.value = "";
       clearImgs();
       refresh();
     });
@@ -365,6 +593,51 @@
       $input.focus();
     }
   });
+
+  if ($endBtn) { $endBtn.onclick = endSession; }
+
+  if ($noteText && $noteInput) {
+    $noteText.onclick = function () {
+      if (!currentSid) return;
+      var s = sessions.find(function (x) { return x.id === currentSid; });
+      $noteInput.value = (s && s.note) || "";
+      $noteText.classList.add("hidden");
+      $noteInput.classList.remove("hidden");
+      $noteInput.focus();
+    };
+
+    function saveNote() {
+      var val = $noteInput.value.trim();
+      $noteInput.classList.add("hidden");
+      $noteText.classList.remove("hidden");
+      if (!currentSid) return;
+      fetch("/api/sessions/" + currentSid + "/note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: val })
+      }).then(function (r) { return r.json(); })
+        .then(function () { refresh(); })
+        .catch(function () { toast("保存备注失败"); });
+    }
+
+    $noteInput.onkeydown = function (e) {
+      if (e.key === "Enter") { e.preventDefault(); saveNote(); }
+      if (e.key === "Escape") {
+        $noteInput.classList.add("hidden");
+        $noteText.classList.remove("hidden");
+      }
+    };
+    $noteInput.onblur = saveNote;
+  }
+
+  if ($clearHist) {
+    $clearHist.onclick = function () {
+      clearArchives();
+      currentHistIdx = -1;
+      renderHistoryView();
+      toast("历史记录已清空");
+    };
+  }
 
   $file.onchange = function () { Array.from($file.files).forEach(addFile); $file.value = ""; };
 

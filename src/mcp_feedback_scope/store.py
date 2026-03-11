@@ -89,6 +89,16 @@ class FeedbackStore:
         with self._lock:
             return self._sessions.get(session_id)
 
+    def update_session_note(self, session_id: str, note: str) -> Session | None:
+        with self._lock:
+            s = self._sessions.get(session_id)
+            if s is None:
+                return None
+            s.note = note
+            s.touch()
+            self._notify()
+            return s
+
     def close_session(self, session_id: str) -> bool:
         with self._lock:
             s = self._sessions.get(session_id)

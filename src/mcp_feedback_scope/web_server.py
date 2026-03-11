@@ -174,6 +174,30 @@ async def disconnect_session(session_id: str) -> dict:
     return s.to_dict() if s else {"ok": True}
 
 
+@app.post("/api/sessions/{session_id}/note")
+async def update_session_note(session_id: str, body: dict) -> dict:
+    """Update the user-defined note for a session."""
+    note = body.get("note", "")
+    s = store.update_session_note(session_id, note)
+    if s is None:
+        return {"error": "session not found"}
+    return s.to_dict()
+
+
+@app.post("/api/sessions/{session_id}/close")
+async def close_session_api(session_id: str) -> dict:
+    """Close a session and return full data for local archival."""
+    reqs = store.list_requests(session_id)
+    ok = store.close_session(session_id)
+    s = store.get_session(session_id)
+    if not ok or not s:
+        return {"error": "session not found"}
+    return {
+        "session": s.to_dict(),
+        "requests": [r.to_dict() for r in reqs],
+    }
+
+
 @app.post("/api/sessions/find-or-create")
 async def find_or_create_session(body: dict) -> dict:
     title = body.get("title", "Untitled")

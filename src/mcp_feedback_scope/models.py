@@ -34,6 +34,7 @@ def _new_id() -> str:
 class Session:
     id: str = field(default_factory=_new_id)
     title: str = ""
+    note: str = ""
     created_at: datetime = field(default_factory=_utcnow)
     last_activity: datetime = field(default_factory=_utcnow)
     status: SessionStatus = SessionStatus.ACTIVE
@@ -45,6 +46,7 @@ class Session:
         return {
             "id": self.id,
             "title": self.title,
+            "note": self.note,
             "created_at": self.created_at.isoformat(),
             "last_activity": self.last_activity.isoformat(),
             "status": self.status.value,
